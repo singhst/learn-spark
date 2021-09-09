@@ -17,6 +17,8 @@ Run the following in macOS terminal,
     export PYSPARK_DRIVER_PYTHON_OPTS="notebook"
     ```
 
+    In terminal,
+
     <img src="img\nano bashrc PATH variables.png" style="zoom:40%;" />
 
 3. Update $PATH variable,
