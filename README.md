@@ -20,7 +20,7 @@ Run the following in macOS terminal,
 3. Update $PATH variable,
 
     ```shell
-        $ source ~/.bashrc
+    $ source ~/.bashrc
     ```
 
 4. Start the `pyspark` with `graphframes` in terminal,
