@@ -33,12 +33,12 @@ Run the following in macOS terminal,
 
     Start the `pyspark` with `graphframes` in terminal,
     
-    ==> 2 flags, `--packages` and `--jars` are needed 
+    ==> Needs 2 flags, `--packages` and `--jars`
 
     ==> Ensure the `graphframes` package name is same as `graphframes-0.8.1-spark3.0-s_2.12.jar` in folder.
     
     ```shell
-    $ $ pyspark --packages graphframes:graphframes:0.8.1-spark3.0-s_2.12 --jars graphframes-0.8.1-spark3.0-s_2.12.jar
+    $ pyspark --packages graphframes:graphframes:0.8.1-spark3.0-s_2.12 --jars graphframes-0.8.1-spark3.0-s_2.12.jar
     ```
     
     Terminal output:
