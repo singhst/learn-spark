@@ -7,7 +7,7 @@ Run the following in macOS terminal,
     $ nano ~/.bashrc
     ```
 
-2. Add the following lines in `~/.bashrc`, so `spark` and `jupyter notebook` can be launched in the same time.
+2. Add the following lines in `~/.bashrc`, so `spark` and `jupyter notebook` can be launched at the same time.
 
     ```shell
     # Setting PATH for Spark 3.1.2
