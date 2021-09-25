@@ -53,6 +53,10 @@ Run the following in macOS terminal,
 
 Inside Jupyter Notebook:
 
+==> Reference: https://medium.com/@roshinijohri/spark-with-jupyter-notebook-on-macos-2-0-0-and-higher-c61b971b5007
+
+<img src="img\test-spark-jupyter-notebook.png" style="zoom:40%;" />
+
 Cell 1:
 
 ```python
@@ -124,8 +128,6 @@ Output 4:
 ```
 
 
-
-<img src="img\test-spark-jupyter-notebook.png" style="zoom:40%;" />
 
 
 
