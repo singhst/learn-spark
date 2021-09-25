@@ -37,6 +37,10 @@ Run the following in macOS terminal,
 
     ==> Ensure the `graphframes` package name is same as `graphframes-0.8.1-spark3.0-s_2.12.jar` in folder.
     
+    => Deal with error: `java.lang.ClassNotFoundException: org.graphframes.GraphFramePythonAPI`
+
+    => https://blog.csdn.net/qq_42166929/article/details/105983616 
+    
     ```shell
     $ pyspark --packages graphframes:graphframes:0.8.1-spark3.0-s_2.12 --jars graphframes-0.8.1-spark3.0-s_2.12.jar
     ```
@@ -45,7 +49,8 @@ Run the following in macOS terminal,
     
     <img src="img\start-pyspark-terminal-output.png" style="zoom:40%;" />
 
-<img src="img\start-pyspark-jupyter-notebook.png" style="zoom:40%;" />
+    Jupyter Notebook:
+    <img src="img\start-pyspark-jupyter-notebook.png" style="zoom:40%;" />
 
 
 
