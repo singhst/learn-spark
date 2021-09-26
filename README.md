@@ -16,9 +16,12 @@ RDD Programming Guide
 
 **Below example shows there are 100 items/elements in this RDD, and this RDD is partitioned into 4 partitions (or items are grouped in 4 partitions).**
 
-1. Store python list `[0,1,...,99]` as RDD in Spark
+1. Store python list `[0,1,...,99]` as RDD in Spark. This dataset ***is not loaded in memory***. It is merely ***a pointer to the Python `py_list`***.
 
    ```python
+   # Stores python list `[0,1,...,99]` as RDD in Spark
+   ## This dataset is not loaded in memory
+   ## It is merely a pointer to the Python `py_list` 
    py_list = range(100)
    rdd = sc.parallelize(py_list)
    print(rdd)
@@ -30,60 +33,64 @@ RDD Programming Guide
    PythonRDD[11] at RDD at PythonRDD.scala:53
    ```
 
-2.	Shows the number of items in this RDD
+2. Shows the number of items in this RDD
 
-    ```python
-    #.count()
-    print('rdd.count()=', rdd.count())
-    ```
-    
-    Output:
-    ```html
-    100
-    ```
-    
-3.	Returns all the items in this RDD as python list
+   ```python
+   #.count()
+   # Shows the number of items in this RDD
+   print('rdd.count()=', rdd.count())
+   ```
 
-    ```python
-    #.collect()
-    print('rdd.collect()=', rdd.collect())
-    ```
-    
-    Output:
-    ```html
-    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
-    ```
+   Output:
+   ```html
+   100
+   ```
 
-4.	Get number of partitions in this RDD
+3. Returns all the items in this RDD as python list
 
-    ```python
-    #.getNumPartitions()
-    print('rdd.getNumPartitions()=', rdd.getNumPartitions())
-    ```
-    
-    Output:
-    ```html
-    4
-    ```
-    
-5.  Returns the content of each partitions as `nested list` / `list of list`
+   ```python
+   #.collect()
+   # Returns all the items in this RDD as python list
+   print('rdd.collect()=', rdd.collect())
+   ```
 
-    ```python
-    rdd.glom().collect()
-    ```
+   Output:
+   ```html
+   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+   ```
 
-    Output:
+4. Get number of partitions in this RDD
 
-    ```html
-    [
-     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 
-     [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 
-     [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74], 
-     [75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
-    ]
-    ```
+   ```python
+   #.getNumPartitions()
+   # Gets number of partitions in this RDD
+   print('rdd.getNumPartitions()=', rdd.getNumPartitions())
+   ```
 
-    
+   Output:
+   ```html
+   4
+   ```
+
+5. Returns the content of each partitions as `nested list` / `list of list`
+
+   ```python
+   # Returns the content of each partitions as `nested list` / `list of list`
+   rdd.glom().collect()
+   ```
+
+   Output:
+
+   ```html
+   [
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 
+    [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 
+    [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74], 
+    [75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+   ]
+   ```
+
+   
 
 
 # spark-install-macos
@@ -94,7 +101,7 @@ Run the following in macOS terminal,
 1. Modify the PATH variables,
     ``` shell
     $ nano ~/.bashrc
-```
+    ```
 
 2. Add the following lines in `~/.bashrc`, so `spark` and `jupyter notebook` can be launched at the same time.
 
@@ -104,7 +111,7 @@ Run the following in macOS terminal,
     export PATH="$SPARK_HOME/bin/:$PATH"
     export PYSPARK_DRIVER_PYTHON="jupyter"
     export PYSPARK_DRIVER_PYTHON_OPTS="notebook"
-```
+    ```
 
     In terminal,
     
