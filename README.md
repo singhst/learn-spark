@@ -6,7 +6,7 @@ The records/items/elemets are stored in RDD(s).
 
 Each RDD composists of `Partitions` ; each `Partition` contains equal number of `items`/`elements`.
 
-<img src="img\rddDataset-partitions-items.png" style="zoom:40%;" />
+<img src="img\rddDataset-partitions-items.png" height="200"/>
 
 ## Basic operation
 
@@ -66,7 +66,7 @@ RDD Programming Guide
     4
     ```
     
-5.  Get content of each partitions
+5.  Returns the content of each partitions as `nested list` / `list of list`
 
     ```python
     rdd.glom().collect()
@@ -76,10 +76,10 @@ RDD Programming Guide
 
     ```html
     [
-    	[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 
-    	[25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 
-    	[50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74], 
-    	[75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 
+     [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 
+     [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74], 
+     [75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
     ]
     ```
 
@@ -118,7 +118,7 @@ Run the following in macOS terminal,
 
 4. Ensure `graphframes-0.8.1-spark3.0-s_2.12.jar` presents in the folder:
 
-    <img src="img\folder-files.png" style="zoom:40%;" />
+    <img src="img\folder-files.png"  height="350" />
 
     Start the `pyspark` with `graphframes` in terminal,
     
@@ -136,10 +136,10 @@ Run the following in macOS terminal,
     
     Terminal output:
     
-    <img src="img\start-pyspark-terminal-output.png" style="zoom:40%;" />
+    <img src="img\start-pyspark-terminal-output.png" height="500" />
 
     Jupyter Notebook:
-    <img src="img\start-pyspark-jupyter-notebook.png" style="zoom:40%;" />
+    <img src="img\start-pyspark-jupyter-notebook.png" height="200" />
 
 
 
@@ -149,7 +149,7 @@ Inside Jupyter Notebook:
 
 ==> Reference: https://medium.com/@roshinijohri/spark-with-jupyter-notebook-on-macos-2-0-0-and-higher-c61b971b5007
 
-<img src="img\test-spark-jupyter-notebook.png" style="zoom:40%;" />
+<img src="img\test-spark-jupyter-notebook.png" height="450" />
 
 Cell 1:
 
