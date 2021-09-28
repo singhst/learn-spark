@@ -16,6 +16,43 @@ RDD Programming Guide
 
 **Below example shows there are 100 items/elements in this RDD, and this RDD is partitioned into 4 partitions (or items are grouped in 4 partitions).**
 
+### Transformations
+
+1.	`.map()` v.s. `.flatmap()`
+
+    ```python
+    # Read data from local file system:
+    print(sc.version, '\n')
+    
+    py_list = [str(x) for x in range(5)]
+    rdd = sc.parallelize(py_list)
+    
+    # map
+    new_rdd = rdd.map(lambda item: item+'xx')
+    print('.map() =\n', new_rdd.collect())
+    print()
+    
+    # flatmap
+    # same as .map(), but flatten the results before returns
+    # i.e. remove all `list of list`/`nested list`
+    new_rdd = rdd.flatMap(lambda item: item+'xx')
+    print('.flatmap() =\n', new_rdd.collect())
+    ```
+    
+    Output:
+    
+    ```html
+    3.1.2
+    
+    .map() =
+     ['0xx', '1xx', '2xx', '3xx', '4xx']
+    
+    .flatmap() =
+     ['0', 'x', 'x', '1', 'x', 'x', '2', 'x', 'x', '3', 'x', 'x', '4', 'x', 'x']
+    ```
+
+### Actions
+
 1. Store python list `[0,1,...,99]` as RDD in Spark. This dataset ***is not loaded in memory***. It is merely ***a pointer to the Python `py_list`***.
 
    ```python
