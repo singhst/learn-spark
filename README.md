@@ -14,8 +14,6 @@ RDD Programming Guide
 
 ==> https://spark.apache.org/docs/latest/rdd-programming-guide.html
 
-**Below example shows there are 100 items/elements in this RDD, and this RDD is partitioned into 4 partitions (or items are grouped in 4 partitions).**
-
 ### Transformations
 
 1.	`.map()` v.s. `.flatmap()`
@@ -56,6 +54,8 @@ RDD Programming Guide
     ==> See [Action](#actions) / [`.map()` v.s. `.foreach()`](#`.map()` v.s. `.foreach()`)
 
 ### Actions
+
+**Below example shows there are 100 items/elements in this RDD, and this RDD is partitioned into 4 partitions (or items are grouped in 4 partitions).**
 
 #### `sc.parallelize()`
 
