@@ -51,83 +51,111 @@ RDD Programming Guide
      ['0', 'x', 'x', '1', 'x', 'x', '2', 'x', 'x', '3', 'x', 'x', '4', 'x', 'x']
     ```
 
+2.	`.foreach()` v.s. `.map()`
+
+    ==> See [Action](#actions) / [`.map()` v.s. `.foreach()`](#`.map()` v.s. `.foreach()`)
+
 ### Actions
 
-1. Store python list `[0,1,...,99]` as RDD in Spark. This dataset ***is not loaded in memory***. It is merely ***a pointer to the Python `py_list`***.
+#### `sc.parallelize()`
 
-   ```python
-   # Stores python list `[0,1,...,99]` as RDD in Spark
-   ## This dataset is not loaded in memory
-   ## It is merely a pointer to the Python `py_list` 
-   py_list = range(100)
-   rdd = sc.parallelize(py_list)
-   print(rdd)
-   ```
+Store python list `[0,1,...,99]` as RDD in Spark. This dataset ***is not loaded in memory***. It is merely ***a pointer to the Python `py_list`***.
 
-   Output:
+```python
+# Stores python list `[0,1,...,99]` as RDD in Spark
+## This dataset is not loaded in memory
+## It is merely a pointer to the Python `py_list` 
+py_list = range(100)
+rdd = sc.parallelize(py_list)
+print(rdd)
+```
 
-   ```html
-   PythonRDD[11] at RDD at PythonRDD.scala:53
-   ```
+Output:
 
-2. Shows the number of items in this RDD
+```html
+PythonRDD[11] at RDD at PythonRDD.scala:53
+```
 
-   ```python
-   #.count()
-   # Shows the number of items in this RDD
-   print('rdd.count()=', rdd.count())
-   ```
+#### `.count()`
 
-   Output:
-   ```html
-   100
-   ```
+Returns the number of items in this RDD
 
-3. Returns all the items in this RDD as python list
+```python
+#.count()
+# Shows the number of items in this RDD
+print('rdd.count()=', rdd.count())
+```
 
-   ```python
-   #.collect()
-   # Returns all the items in this RDD as python list
-   print('rdd.collect()=', rdd.collect())
-   ```
+Output:
+```html
+100
+```
 
-   Output:
-   ```html
-   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
-   ```
+#### `.collect()`
 
-4. Get number of partitions in this RDD
+Returns all the items in this RDD as python list
 
-   ```python
-   #.getNumPartitions()
-   # Gets number of partitions in this RDD
-   print('rdd.getNumPartitions()=', rdd.getNumPartitions())
-   ```
+```python
+#.collect()
+# Returns all the items in this RDD as python list
+print('rdd.collect()=', rdd.collect())
+```
 
-   Output:
-   ```html
-   4
-   ```
+Output:
+```html
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+```
 
-5. Returns the content of each partitions as `nested list` / `list of list`
+#### `.getNumPartitions()`
 
-   ```python
-   # Returns the content of each partitions as `nested list` / `list of list`
-   rdd.glom().collect()
-   ```
+Returns number of partitions in this RDD
 
-   Output:
+```python
+#.getNumPartitions()
+# Gets number of partitions in this RDD
+print('rdd.getNumPartitions()=', rdd.getNumPartitions())
+```
 
-   ```html
-   [
-    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 
-    [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 
-    [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74], 
-    [75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
-   ]
-   ```
+Output:
+```html
+4
+```
 
-   
+#### `.glom().collect()`
+
+Returns the content of each partitions as `nested list` / `list of list`
+
+```python
+# Returns the content of each partitions as `nested list` / `list of list`
+rdd.glom().collect()
+```
+
+Output:
+
+```html
+[
+ [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 
+ [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 
+ [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74], 
+ [75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
+]
+```
+
+#### `.foreach()`
+
+Just executes inside function for each data element in the **RDD**, but return ***NOTHING***. 
+
+##### `.map()` v.s. `.foreach()`
+
+==> [reference](https://stackoverflow.com/questions/354909/is-there-a-difference-between-foreach-and-map)
+
+* The important difference between them is that `map` accumulates all of the results into a collection, whereas `foreach` returns nothing. `map` is usually used when you want to transform a collection of elements with a function, whereas `foreach` simply executes an action for each element.
+
+* In short, `foreach` is for applying an operation on each element of a collection of elements, whereas `map` is for transforming one collection into another.
+
+* `foreach` works with a single collection of elements. This is the input collection.
+
+* `map` works with two collections of elements: the input collection and the output collection.
 
 
 # spark-install-macos
