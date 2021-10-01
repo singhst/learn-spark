@@ -1,63 +1,189 @@
 # pyspark-note
 
-## Concept
+# Concept
 
 The records/items/elemets are stored in RDD(s).
 
-Each RDD composists of `Partitions` ; each `Partition` contains equal number of `items`/`elements`.
+Each RDD composists of `Partitions`; each `Partition` contains equal number of `items`/`elements`.
 
 <img src="img\rddDataset-partitions-items.png" height="200"/>
 
-## Basic operation
+# Basic operation
 
 RDD Programming Guide
 
 ==> https://spark.apache.org/docs/latest/rdd-programming-guide.html
 
-### Transformations
+## Transformations
 
-1.	`.map()` v.s. `.flatmap()`
+### `.map()` v.s. `.mapPartitions()` v.s. `.mapPartitionsWithIndex()`
 
-    ```python
-    # Read data from local file system:
-    print(sc.version, '\n')
-    
-    py_list = [str(x) for x in range(5)]
-    rdd = sc.parallelize(py_list)
-    
-    # map
-    new_rdd = rdd.map(lambda item: item+'xx')
-    print('.map() =\n', new_rdd.collect())
-    print()
-    
-    # flatmap
-    # same as .map(), but flatten the results before returns
-    # i.e. remove all `list of list`/`nested list`
-    new_rdd = rdd.flatMap(lambda item: item+'xx')
-    print('.flatmap() =\n', new_rdd.collect())
-    ```
-    
-    Output:
-    
-    ```html
-    3.1.2
-    
-    .map() =
-     ['0xx', '1xx', '2xx', '3xx', '4xx']
-    
-    .flatmap() =
-     ['0', 'x', 'x', '1', 'x', 'x', '2', 'x', 'x', '3', 'x', 'x', '4', 'x', 'x']
-    ```
+Spark的map，mapPartitions，mapPartitionsWithIndex詳解
 
-2.	`.foreach()` v.s. `.map()`
+==> https://blog.csdn.net/QQ1131221088/article/details/104051087
 
-    ==> See [Action](#actions) / [`.map()` v.s. `.foreach()`](#`.map()` v.s. `.foreach()`)
+---
 
-### Actions
+#### 1. `.map()`
+
+Return a new distributed dataset formed by passing each element of the source through a function func.
+
+```python
+rdd_2 = sc.parallelize(range(10), 4)
+
+new_rdd_2 = rdd_2.map(lambda x: str(x))
+print('> .map() =\n', new_rdd_2.glom().collect())
+print()
+
+#################################################
+from pyspark import TaskContext
+
+result = rdd_2.map(lambda x :x+TaskContext().partitionId())
+print('> Original RDD, rdd_2.glom().collect() =\n', rdd_2.glom().collect())
+print()
+print('> .map() with TaskContext().partitionId() =\n', result.glom().collect())
+```
+
+Output:
+
+```shell
+> .map() =
+ [['0', '1'], ['2', '3', '4'], ['5', '6'], ['7', '8', '9']]
+
+> Original RDD, rdd_2.glom().collect() =
+ [[0, 1], [2, 3, 4], [5, 6], [7, 8, 9]]
+
+> .map() with TaskContext().partitionId() =
+ [[0, 1], [3, 4, 5], [7, 8], [10, 11, 12]]
+```
+
+#### 2. `.mapPartitions()`
+
+Similar to `.map()`, but runs separately on each partition (block) of the RDD, so func must be of type `Iterator<T> => Iterator<U>` when running on an RDD of type T.
+
+```python 
+rdd_2 = sc.parallelize([1,2,3,4,5,'a','b','c','d','e'], 4)
+
+def func(itemsInPartition):
+    # apply this `func` to each partition (=the whole partition) of the RDD
+    yield str(itemsInPartition)
+    
+rdd_func = rdd_2.mapPartitions(func)
+print('rdd_2.mapPartitions(func) =\n', rdd_func.glom().collect())
+print()
+    
+    
+def func_2(itemsInPartition):
+    # you loop through each item in each partition of the RDD
+    # = just apply this `func_2` to each item in each partition
+    for item in itemsInPartition: 
+        yield str(item)
+
+rdd_func_2 = rdd_2.mapPartitions(func_2)
+print('rdd_2.mapPartitions(func_2) =\n', rdd_func_2.glom().collect())
+```
+
+Output:
+
+```shell
+rdd_2.mapPartitions(func) =
+ [['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>']]
+
+rdd_2.mapPartitions(func_2) =
+ [['1', '2'], ['3', '4'], ['5', 'a'], ['b', 'c', 'd', 'e']]
+```
+
+#### 3. `.mapPartitionsWithIndex()`
+
+Similar to `mapPartitions`, but also provides func with an integer value representing the index of the partition, so func must be of type `(Int, Iterator<T>) => Iterator<U>` when running on an RDD of type T.
+
+---
+
+By using mapParitionsWithIndex you could output new elements which have their partition in it, then when you reduce you will know which partition you are handling the elements from. 
+
+==> https://stackoverflow.com/questions/31281225/find-out-the-partition-no-id
+
+```python
+rdd_3 = sc.parallelize(range(10), 4)
+
+# mapPartitionsWithIndex
+def func(partitionIndex, itemsInPartition): 
+    # apply this `func` to each partition (=the whole partition) of the RDD
+    yield (partitionIndex, sum(itemsInPartition))
+new_rdd_3 = rdd_3.mapPartitionsWithIndex(func)
+
+# glom() flattens elements on the same partition
+print('> rdd_3.glom().collect() =', rdd_3.glom().collect())
+print('> new_rdd_3.glom().collect() =', new_rdd_3.glom().collect())
+
+
+################################################################################
+
+def func_2(partitionIndex, itemsInPartition):
+    # you loop through each item in each partition of the RDD
+    # = just apply this `func_2` to each item in each partition
+    for item in itemsInPartition: 
+        yield str(item+partitionIndex)
+new_2_rdd_3 = rdd_3.mapPartitionsWithIndex(func_2)
+
+# glom() flattens elements on the same partition
+print()
+print('>> new_2_rdd_3.glom().collect() =', new_2_rdd_3.glom().collect())
+```
+
+Output:
+
+```shell
+> rdd_3.glom().collect() = [[0, 1], [2, 3, 4], [5, 6], [7, 8, 9]]
+> new_rdd_3.glom().collect() = [[(0, 1)], [(1, 9)], [(2, 11)], [(3, 24)]]
+
+>> new_2_rdd_3.glom().collect() = [['0', '1'], ['3', '4', '5'], ['7', '8'], ['10', '11', '12']]
+```
+
+---
+
+### `.map()` v.s. `.flatmap()`
+
+```python
+print(sc.version, '\n')
+
+py_list = [str(x) for x in range(5)]
+rdd = sc.parallelize(py_list)
+
+# map
+new_rdd = rdd.map(lambda item: item+'xx')
+print('.map() =\n', new_rdd.collect())
+print()
+
+# flatmap
+# same as .map(), but flatten the results before returns
+# i.e. remove all `list of list`/`nested list`
+new_rdd = rdd.flatMap(lambda item: item+'xx')
+print('.flatmap() =\n', new_rdd.collect())
+```
+
+Output:
+
+```shell
+3.1.2
+
+.map() =
+['0xx', '1xx', '2xx', '3xx', '4xx']
+
+.flatmap() =
+['0', 'x', 'x', '1', 'x', 'x', '2', 'x', 'x', '3', 'x', 'x', '4', 'x', 'x']
+```
+
+### `.foreach()` v.s. `.map()`
+
+==> See [Action](#actions) / [`.map()` v.s. `.foreach()`](#`.map()` v.s. `.foreach()`)
+
+
+## Actions
 
 **Below example shows there are 100 items/elements in this RDD, and this RDD is partitioned into 4 partitions (or items are grouped in 4 partitions).**
 
-#### `sc.parallelize()`
+### `sc.parallelize()`
 
 Store python list `[0,1,...,99]` as RDD in Spark. This dataset ***is not loaded in memory***. It is merely ***a pointer to the Python `py_list`***.
 
@@ -72,11 +198,11 @@ print(rdd)
 
 Output:
 
-```html
+```shell
 PythonRDD[11] at RDD at PythonRDD.scala:53
 ```
 
-#### `.count()`
+### `.count()`
 
 Returns the number of items in this RDD
 
@@ -87,11 +213,11 @@ print('rdd.count()=', rdd.count())
 ```
 
 Output:
-```html
+```shell
 100
 ```
 
-#### `.collect()`
+### `.collect()`
 
 Returns all the items in this RDD as python list
 
@@ -102,11 +228,11 @@ print('rdd.collect()=', rdd.collect())
 ```
 
 Output:
-```html
+```shell
 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
 ```
 
-#### `.getNumPartitions()`
+### `.getNumPartitions()`
 
 Returns number of partitions in this RDD
 
@@ -117,11 +243,11 @@ print('rdd.getNumPartitions()=', rdd.getNumPartitions())
 ```
 
 Output:
-```html
+```shell
 4
 ```
 
-#### `.glom().collect()`
+### `.glom().collect()`
 
 Returns the content of each partitions as `nested list` / `list of list`
 
@@ -132,7 +258,7 @@ rdd.glom().collect()
 
 Output:
 
-```html
+```shell
 [
  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 
  [25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 
@@ -141,11 +267,11 @@ Output:
 ]
 ```
 
-#### `.foreach()`
+### `.foreach()`
 
 Just executes inside function for each data element in the **RDD**, but return ***NOTHING***. 
 
-##### `.map()` v.s. `.foreach()`
+#### `.map()` v.s. `.foreach()`
 
 ==> [reference](https://stackoverflow.com/questions/354909/is-there-a-difference-between-foreach-and-map)
 
@@ -226,13 +352,12 @@ Inside Jupyter Notebook:
 Cell 1:
 
 ```python
-# Read data from local file system:
 print(sc.version)
 ```
 
 Output 1:
 
-```html
+```shell
 3.1.2
 ```
 
@@ -258,7 +383,7 @@ g.inDegrees.show()
 
 Output 3:
 
-```html
+```shell
 +---+--------+
 | id|inDegree|
 +---+--------+
@@ -284,7 +409,7 @@ df.show()
 
 Output 4:
 
-```html
+```shell
 +---+----+----+
 | id|dogs|cats|
 +---+----+----+
@@ -292,8 +417,5 @@ Output 4:
 |  2|   0|   1|
 +---+----+----+
 ```
-
-
-
 
 
