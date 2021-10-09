@@ -283,6 +283,11 @@ Just executes inside function for each data element in the **RDD**, but return *
 
 * `map` works with two collections of elements: the input collection and the output collection.
 
+# RDD - Closure
+
+https://mycupoftea00.medium.com/understanding-closure-in-spark-af6f280eebf9
+
+https://spark.apache.org/docs/latest/rdd-programming-guide.html#understanding-closures-
 
 # spark-install-macos
 
@@ -417,5 +422,4 @@ Output 4:
 |  2|   0|   1|
 +---+----+----+
 ```
-
 
