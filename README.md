@@ -97,8 +97,6 @@ rdd_2.mapPartitions(func_2) =
 
 Similar to `mapPartitions`, but also provides func with an integer value representing the index of the partition, so func must be of type `(Int, Iterator<T>) => Iterator<U>` when running on an RDD of type T.
 
----
-
 By using mapParitionsWithIndex you could output new elements which have their partition in it, then when you reduce you will know which partition you are handling the elements from. 
 
 ==> https://stackoverflow.com/questions/31281225/find-out-the-partition-no-id
