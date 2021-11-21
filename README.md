@@ -342,7 +342,40 @@ Run the following in macOS terminal,
     Jupyter Notebook:
     <img src="img\start-pyspark-jupyter-notebook.png" height="200" />
 
+5. Use MongoDB in Spark.
 
+    Terminal:
+
+    ```shell 
+    pyspark --packages graphframes:graphframes:0.8.1-spark3.0-s_2.12 --jars graphframes-0.8.1-spark3.0-s_2.12.jar \
+              --conf "spark.mongodb.input.uri=mongodb://127.0.0.1/test.application_test?readPreference=primaryPreferred" \
+              --conf "spark.mongodb.output.uri=mongodb://127.0.0.1/test.application_test" \
+              --packages org.mongodb.spark:mongo-spark-connector_2.12:3.0.1
+    ```
+
+    Notebook:
+    ```python
+    from pymongo import MongoClient 
+
+    def _saveDfToMongoDB(sparkDF, mongoCollection):
+        sparkDF.cache()
+        print(f"Storing {sparkDF.count()} {mongoCollection} to db")
+
+        start = datetime.now()
+
+        sparkDF.write.format("mongo") \
+            .mode("append") \
+            .option("database", "msbd5003") \
+            .option("collection", mongoCollection) \
+            .save()
+
+        end = datetime.now()
+        spent = (end - start).total_seconds()
+        print(f"Stored, time used: {spent} s")
+    
+    df = spark.read.json("file path")
+    _saveDfToMongoDB(df, "mongodb collection name")
+    ```
 
 ## Test Spark in Jupyter Notebook
 
