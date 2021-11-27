@@ -397,6 +397,32 @@ Output 1:
 3.1.2
 ```
 
+OR
+
+```python
+from pyspark import SparkContext
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+
+spark = SparkSession.builder.getOrCreate()
+spark
+```
+
+Output:
+
+```shell
+SparkSession - hive
+SparkContext
+
+Spark UI
+Version
+v3.1.2
+Master
+local[*]
+AppName
+PySparkShell
+```
+
 Cell 2:
 
 ```python
