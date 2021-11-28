@@ -287,6 +287,96 @@ https://mycupoftea00.medium.com/understanding-closure-in-spark-af6f280eebf9
 
 https://spark.apache.org/docs/latest/rdd-programming-guide.html#understanding-closures-
 
+# Deal with `JSON` data
+
+**https://sparkbyexamples.com/pyspark/pyspark-maptype-dict-examples/**
+
+Steps,
+1. JSON from API 
+2. get `list of dict` 
+3. pySpark dataframe with `map type` 
+4. access PySpark MapType Elements
+
+## Details
+
+1. 
+    ```python
+    # The nested json / list of dictionary
+    data_json = [
+        ('James', {'hair': 'black', 'eye': 'brown'}),
+        ('Michael', {'hair': 'brown', 'eye': None}),
+        ('Robert', {'hair': 'red', 'eye': 'black'}),
+        ('Washington', {'hair': 'grey', 'eye': 'grey'}),
+        ('Jefferson', {'hair': 'brown', 'eye': ''})
+    ]
+    df = spark.createDataFrame(data=data_json)
+    df.printSchema()
+    ```
+
+    Output:
+
+    ```
+    root
+    |-- Name: string (nullable = true)
+    |-- properties: map (nullable = true)
+    |    |-- key: string
+    |    |-- value: string (valueContainsNull = true)
+
+    +----------+-----------------------------+
+    |Name      |properties                   |
+    +----------+-----------------------------+
+    |James     |[eye -> brown, hair -> black]|
+    |Michael   |[eye ->, hair -> brown]      |
+    |Robert    |[eye -> black, hair -> red]  |
+    |Washington|[eye -> grey, hair -> grey]  |
+    |Jefferson |[eye -> , hair -> brown]     |
+    +----------+-----------------------------+
+    ```
+
+2. Access the elements in map datatype
+
+    Method (1):
+    ```python
+    df3 = df.rdd.map(lambda x: \
+                    (x.name, x.properties["hair"], x.properties["eye"])) \
+                    .toDF(["name", "hair", "eye"])
+    df3.printSchema()
+    df3.show()
+    ```
+
+    OR
+
+    Method (2):
+    ```python
+    df.withColumn("hair", df.properties.getItem("hair")) \
+        .withColumn("eye", df.properties.getItem("eye")) \
+        .drop("properties") \
+        .show()
+
+    df.withColumn("hair", df.properties["hair"]) \
+        .withColumn("eye", df.properties["eye"]) \
+        .drop("properties") \
+        .show()
+    ```
+
+    Output:
+    ```
+    root
+    |-- name: string (nullable = true)
+    |-- hair: string (nullable = true)
+    |-- eye: string (nullable = true)
+
+    +----------+-----+-----+
+    |      name| hair|  eye|
+    +----------+-----+-----+
+    |     James|black|brown|
+    |   Michael|brown| null|
+    |    Robert|  red|black|
+    |Washington| grey| grey|
+    | Jefferson|brown|     |
+    +----------+-----+-----+
+    ```
+
 # spark-install-macos
 
 Run the following in macOS terminal,
