@@ -430,6 +430,7 @@ Run the following in macOS terminal,
     <img src="img\start-pyspark-terminal-output.png" height="500" />
 
     Jupyter Notebook:
+
     <img src="img\start-pyspark-jupyter-notebook.png" height="200" />
 
 5. Use MongoDB in Spark.
