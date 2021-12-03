@@ -377,6 +377,82 @@ Steps,
     +----------+-----+-----+
     ```
 
+# Spark Dataframe
+
+## Create sparkdf by reading `.csv`
+
+* http://www.cse.ust.hk/msbd5003/data/customer.csv
+* http://www.cse.ust.hk/msbd5003/data/orders.csv
+
+`customer.csv`:
+```shell
+CUSTKEY,NAME,ADDRESS,NATIONKEY,PHONE,ACCTBAL,MKTSEGMENT,COMMENT
+1,Customer#000000001,IVhzIApeRb ot,c,E,15,25-989-741-2988,711.56,BUILDING,to the even, regular platelets. regular, ironic epitaphs nag e,
+2,Customer#000000002,XSTf4,NCwDVaWNe6tEgvwfmRchLXak,13,23-768-687-3665,121.65,AUTOMOBILE,l accounts. blithely ironic theodolites integrate boldly: caref,
+3,Customer#000000003,MG9kdTD2WBHm,1,11-719-748-3364,7498.12,AUTOMOBILE, deposits eat slyly ironic, even instructions. express foxes detect slyly. blithely even accounts abov,
+4,Customer#000000004,XxVSJsLAGtn,4,14-128-190-5944,2866.83,MACHINERY, requests. final, regular ideas sleep final accou,
+...
+```
+
+`orders.csv`:
+```shell
+ORDERKEY,CUSTKEY,ORDERSTATUS,TOTALPRICE,ORDERDATE,ORDERPRIORITY,CLERK,SHIPPRIORITY,COMMENT
+1,370,O,172799.49,1996-01-02,5-LOW,Clerk#000000951,0,nstructions sleep furiously among ,
+2,781,O,38426.09,1996-12-01,1-URGENT,Clerk#000000880,0, foxes. pending accounts at the pending, silent asymptot,
+3,1234,F,205654.30,1993-10-14,5-LOW,Clerk#000000955,0,sly final accounts boost. carefully regular ideas cajole carefully. depos,
+4,1369,O,56000.91,1995-10-11,5-LOW,Clerk#000000124,0,sits. slyly regular warthogs cajole. regular, regular theodolites acro,
+5,445,F,105367.67,1994-07-30,5-LOW,Clerk#000000925,0,quickly. bold deposits sleep slyly. packages use slyly,
+...
+```
+
+```python
+dfCustomer = spark.read.csv('customer.csv', header=True, inferSchema=True)
+dfOrders = spark.read.csv('orders.csv', header=True, inferSchema=True)
+```
+
+## Print schema in df
+
+```python
+dfCustomer.printSchema()
+print(dfCustomer.count())
+
+dfOrders.printSchema()
+print(dfOrders.count())
+```
+
+Output:
+```shell
+root
+ |-- CUSTKEY: integer (nullable = true)
+ |-- NAME: string (nullable = true)
+ |-- ADDRESS: string (nullable = true)
+ |-- NATIONKEY: string (nullable = true)
+ |-- PHONE: string (nullable = true)
+ |-- ACCTBAL: string (nullable = true)
+ |-- MKTSEGMENT: string (nullable = true)
+ |-- COMMENT: string (nullable = true)
+1500
+
+root
+ |-- ORDERKEY: integer (nullable = true)
+ |-- CUSTKEY: integer (nullable = true)
+ |-- ORDERSTATUS: string (nullable = true)
+ |-- TOTALPRICE: double (nullable = true)
+ |-- ORDERDATE: string (nullable = true)
+ |-- ORDERPRIORITY: string (nullable = true)
+ |-- CLERK: string (nullable = true)
+ |-- SHIPPRIORITY: integer (nullable = true)
+ |-- COMMENT: string (nullable = true)
+ 15000
+```
+
+## `.join()` dataframes
+
+```python
+
+```
+
+
 # spark-install-macos
 
 Run the following in macOS terminal,
