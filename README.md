@@ -1,5 +1,35 @@
 # pyspark-note
 
+- [pyspark-note](#pyspark-note)
+- [Concept](#concept)
+- [Basic operation](#basic-operation)
+  - [Transformations](#transformations)
+    - [`.map()` v.s. `.mapPartitions()` v.s. `.mapPartitionsWithIndex()`](#map-vs-mappartitions-vs-mappartitionswithindex)
+      - [1. `.map()`](#1-map)
+      - [2. `.mapPartitions()`](#2-mappartitions)
+      - [3. `.mapPartitionsWithIndex()`](#3-mappartitionswithindex)
+    - [`.map()` v.s. `.flatmap()`](#map-vs-flatmap)
+    - [`.foreach()` v.s. `.map()`](#foreach-vs-map)
+  - [Actions](#actions)
+    - [`sc.parallelize()`](#scparallelize)
+    - [`.count()`](#count)
+    - [`.collect()`](#collect)
+    - [`.getNumPartitions()`](#getnumpartitions)
+    - [`.glom().collect()`](#glomcollect)
+    - [`.foreach()`](#foreach)
+      - [`.map()` v.s. `.foreach()`](#map-vs-foreach)
+- [RDD - Closure](#rdd---closure)
+- [Deal with `JSON` data](#deal-with-json-data)
+  - [Details](#details)
+- [Spark Dataframe](#spark-dataframe)
+  - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
+  - [Print schema in df](#print-schema-in-df)
+  - [`.join()` dataframes](#join-dataframes)
+- [spark-install-macos](#spark-install-macos)
+  - [How to start Jupyter Notebook with Spark + GraphFrames](#how-to-start-jupyter-notebook-with-spark--graphframes)
+  - [Test Spark in Jupyter Notebook](#test-spark-in-jupyter-notebook)
+
+
 # Concept
 
 The records/items/elemets are stored in RDD(s).
