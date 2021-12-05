@@ -630,7 +630,7 @@ Run the following in macOS terminal,
 
 4. Ensure `graphframes-0.8.1-spark3.0-s_2.12.jar` presents in the folder:
 
-    <img src="img\folder-files.png"  height="350" />
+    <img src="img\folder-files.png"  height="300" />
 
     Start the `pyspark` with `graphframes` in terminal,
     
