@@ -24,12 +24,17 @@
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
   - [`.printSchema()` in df](#printschema-in-df)
-  - [`.join()`/`` dataframes](#join-dataframes)
-  - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
   - [`.groupBy().count()`](#groupbycount)
   - [`df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables](#dfcreateorreplacetempviewsql_table-allows-to-run-sql-queries-once-register-df-as-temporary-tables)
+  - [`.join()`/`spark.sql()` dataframes](#joinsparksql-dataframes)
+    - [`.join()`](#join)
+    - [`spark.sql()` + `df.createOrReplaceTempView("sql_table")`](#sparksql--dfcreateorreplacetempviewsql_table)
+  - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
 - [spark-install-macos](#spark-install-macos)
   - [How to start Jupyter Notebook with Spark + GraphFrames](#how-to-start-jupyter-notebook-with-spark--graphframes)
+    - [Start it locally](#start-it-locally)
+    - [Start in Google Colab](#start-in-google-colab)
+    - [Use MongoDB in Spark](#use-mongodb-in-spark)
   - [Test Spark in Jupyter Notebook](#test-spark-in-jupyter-notebook)
 - [Reference](#reference)
 
@@ -95,22 +100,33 @@ Output:
 
 Similar to `.map()`, but runs separately on each partition (block) of the RDD, so func must be of type `Iterator<T> => Iterator<U>` when running on an RDD of type T.
 
+==> `Divide-and-Conquer` algorithm => master node `divides` the RDD into partitions, and distributes the partitions to workers, workers apply the same function to its partition. Then master node gets back (i.e. `conquer`) the processed resuts from all workers.
+
+(1)
 ```python 
 rdd_2 = sc.parallelize([1,2,3,4,5,'a','b','c','d','e'], 4)
 
-def func(itemsInPartition):
+def func(itemsIteratorInPartition):
     # apply this `func` to each partition (=the whole partition) of the RDD
-    yield str(itemsInPartition)
+    yield str(itemsIteratorInPartition)
     
 rdd_func = rdd_2.mapPartitions(func)
 print('rdd_2.mapPartitions(func) =\n', rdd_func.glom().collect())
 print()
-    
-    
-def func_2(itemsInPartition):
+```
+
+Output:
+```shell
+rdd_2.mapPartitions(func) =
+ [['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>']]
+```
+
+(2)
+```python
+def func_2(itemsIteratorInPartition):
     # you loop through each item in each partition of the RDD
     # = just apply this `func_2` to each item in each partition
-    for item in itemsInPartition: 
+    for item in itemsIteratorInPartition: 
         yield str(item)
 
 rdd_func_2 = rdd_2.mapPartitions(func_2)
@@ -118,11 +134,7 @@ print('rdd_2.mapPartitions(func_2) =\n', rdd_func_2.glom().collect())
 ```
 
 Output:
-
 ```shell
-rdd_2.mapPartitions(func) =
- [['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>'], ['<itertools.chain object at 0x7ff8094580d0>']]
-
 rdd_2.mapPartitions(func_2) =
  [['1', '2'], ['3', '4'], ['5', 'a'], ['b', 'c', 'd', 'e']]
 ```
@@ -139,9 +151,9 @@ By using mapParitionsWithIndex you could output new elements which have their pa
 rdd_3 = sc.parallelize(range(10), 4)
 
 # mapPartitionsWithIndex
-def func(partitionIndex, itemsInPartition): 
+def func(partitionIndex, itemsIteratorInPartition): 
     # apply this `func` to each partition (=the whole partition) of the RDD
-    yield (partitionIndex, sum(itemsInPartition))
+    yield (partitionIndex, sum(itemsIteratorInPartition))
 new_rdd_3 = rdd_3.mapPartitionsWithIndex(func)
 
 # glom() flattens elements on the same partition
@@ -151,10 +163,10 @@ print('> new_rdd_3.glom().collect() =', new_rdd_3.glom().collect())
 
 ################################################################################
 
-def func_2(partitionIndex, itemsInPartition):
+def func_2(partitionIndex, itemsIteratorInPartition):
     # you loop through each item in each partition of the RDD
     # = just apply this `func_2` to each item in each partition
-    for item in itemsInPartition: 
+    for item in itemsIteratorInPartition: 
         yield str(item+partitionIndex)
 new_2_rdd_3 = rdd_3.mapPartitionsWithIndex(func_2)
 
@@ -480,50 +492,6 @@ root
  15000
 ```
 
-## `.join()`/`` dataframes
-
-
-```python
-# join 2 df by `CUSTKEY`
-joined_df = dfOrders.join(dfCustomer, on='CUSTKEY', how='fullouter')
-df2 = joined_df.select('CUSTKEY', 'ORDERKEY')
-df2.show() #view
-```
-
-`how`: str, optional
-    default ``inner``. Must be one of: ``inner``, ``cross``, ``outer``,
-    ``full``, ``fullouter``, ``full_outer``, ``left``, ``leftouter``, ``left_outer``,
-    ``right``, ``rightouter``, ``right_outer``, ``semi``, ``leftsemi``, ``left_semi``,
-    ``anti``, ``leftanti`` and ``left_anti``.
-
-```python
-```
-
-Output:
-```shell
-	CUSTKEY	ORDERKEY
-0	148	3556.0
-1	148	6214.0
-2	148	9413.0
-3	148	10785.0
-4	148	18631.0
-...	...	...
-15495	1138	46694.0
-15496	1138	55237.0
-15497	1138	56261.0
-15498	1413	NaN
-15499	1476	NaN
-15500 rows × 2 columns
-```
-
-## `df1.union(df2)` concat 2 dataframes
-
-The dataframes may need to have identical columns, in which case you can use `withColumn()` to create `normal_1` and `normal_2`
-
-```python
-df_concat = df_1.union(df_2)
-```
-
 ## `.groupBy().count()`
 
 Find `count of orders` of each customer `CUSTKEY` has:
@@ -576,11 +544,65 @@ Output:
 1500 rows × 2 columns
 ```
 
+## `.join()`/`spark.sql()` dataframes
+### `.join()`
+```python
+# join 2 df by `CUSTKEY`
+joined_df = dfCustomer.join(dfOrders, on='CUSTKEY', how='leftouter')
+df2 = joined_df.select('CUSTKEY', 'ORDERKEY').sort(asc('CUSTKEY'),desc('ORDERKEY'))
+df2.toPandas() #view
+```
+
+`how`: str, optional
+    default ``inner``. Must be one of: ``inner``, ``cross``, ``outer``,
+    ``full``, ``fullouter``, ``full_outer``, ``left``, ``leftouter``, ``left_outer``,
+    ``right``, ``rightouter``, ``right_outer``, ``semi``, ``leftsemi``, ``left_semi``,
+    ``anti``, ``leftanti`` and ``left_anti``.
+
+### `spark.sql()` + `df.createOrReplaceTempView("sql_table")`
+```python
+dfOrders.createOrReplaceTempView("orders")
+dfCustomer.createOrReplaceTempView("customer")
+
+# Can run SQL query on it
+df2 = spark.sql("SELECT customer.CUSTKEY, orders.ORDERKEY FROM customer left outer join orders on customer.CUSTKEY = orders.CUSTKEY")
+df2.toPandas()
+```
+
+Output:
+```shell
+    CUSTKEY	ORDERKEY
+0	1	53283.0
+1	1	52263.0
+2	1	43879.0
+3	1	36422.0
+4	1	34019.0
+...	...	...
+15495	1499	7301.0
+15496	1499	3523.0
+15497	1499	1472.0
+15498	1499	1252.0
+15499	1500	NaN
+15500 rows × 2 columns
+```
+
+## `df1.union(df2)` concat 2 dataframes
+
+The dataframes may need to have identical columns, in which case you can use `withColumn()` to create `normal_1` and `normal_2`
+
+```python
+df_concat = df_1.union(df_2)
+```
+
+
 # spark-install-macos
 
 Run the following in macOS terminal,
 
 ## How to start Jupyter Notebook with Spark + GraphFrames
+
+### Start it locally
+
 1. Modify the PATH variables,
     ``` shell
     $ nano ~/.bashrc
@@ -632,7 +654,13 @@ Run the following in macOS terminal,
 
     <img src="img\start-pyspark-jupyter-notebook.png" height="200" />
 
-5. Use MongoDB in Spark.
+### Start in Google Colab
+
+[Still need to investigate]
+
+https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe
+
+### Use MongoDB in Spark
 
     Terminal:
 
