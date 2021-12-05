@@ -64,3 +64,78 @@ data
 9080	1980-09-02	182.339996	182.339996	182.339996	182.339996	0	182.339996
 9081 rows × 7 columns
 ```
+
+# Start PySpark
+
+Cell 6 (text):
+```shell
+# Setup in Collab
+Collab Only code:
+```
+
+Cell 2:
+```python
+# innstall java
+!apt-get install openjdk-8-jdk-headless -qq > /dev/null
+
+# install spark (change the version number if needed)
+!wget -q https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
+
+# unzip the spark file to the current folder
+!tar xf spark-3.0.0-bin-hadoop3.2.tgz
+
+```
+
+Cell 3:
+```python
+# set your spark folder to your system path environment. 
+import os
+os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-8-openjdk-amd64"
+os.environ["SPARK_HOME"] = "/content/spark-3.0.0-bin-hadoop3.2"
+```
+
+Cell 4:
+```python
+# install findspark using pip
+!pip install -q findspark
+!pip install pyspark==3.0.2
+```
+
+Cell 5:
+```python
+import findspark
+findspark.init()
+```
+
+Cell 6 (text):
+```shell
+# Not on Colab you should start form HERE:
+```
+
+Cell 7:
+```python
+from pyspark import SparkContext
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+
+spark = SparkSession.builder.master("local[*]").getOrCreate()
+sc = spark.sparkContext
+
+spark
+```
+
+Output:
+```shell
+SparkSession - in-memory
+
+SparkContext
+
+Spark UI
+
+Version
+v3.0.0
+Master
+local[*]
+AppName
+pyspark-shell
+```
