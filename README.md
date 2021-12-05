@@ -561,7 +561,7 @@ df.toPandas()
 
 Output:
 ```
-CUSTKEY	count
+    CUSTKEY	count
 0	1	9.0
 1	2	10.0
 2	3	NaN
