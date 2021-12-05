@@ -1,3 +1,7 @@
+- [Download files from URL](#download-files-from-url)
+- [Get files from Google Drive (private file)](#get-files-from-google-drive-private-file)
+- [Start PySpark in Colab](#start-pyspark-in-colab)
+
 # Download files from URL
 
 ```python
@@ -11,7 +15,9 @@ print(file_id)
 # append the id to this REST command
 file_download_link = "https://docs.google.com/uc?export=download&id=" + file_id
 
-!wget -O x.txt "https://docs.google.com/uc?export=download&id=15XVdoHh7gzb2y-o5QwtZkwYSeYXUK-EY"
+# `-N` flag to skip download if files already exist in wget
+# https://stackoverflow.com/questions/4944295/skip-download-if-files-already-exist-in-wget
+!wget  -N -O x.txt "https://docs.google.com/uc?export=download&id=15XVdoHh7gzb2y-o5QwtZkwYSeYXUK-EY"
 ```
 
 ```shell
@@ -65,7 +71,7 @@ data
 9081 rows × 7 columns
 ```
 
-# Start PySpark
+# Start PySpark in Colab
 
 Cell 1 (text):
 ```shell
@@ -79,7 +85,7 @@ Cell 2:
 !apt-get install openjdk-8-jdk-headless -qq > /dev/null
 
 # install spark (change the version number if needed)
-!wget -q https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
+!wget -q -N https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
 
 # unzip the spark file to the current folder
 !tar xf spark-3.0.0-bin-hadoop3.2.tgz
