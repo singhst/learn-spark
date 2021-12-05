@@ -67,7 +67,7 @@ data
 
 # Start PySpark
 
-Cell 6 (text):
+Cell 1 (text):
 ```shell
 # Setup in Collab
 Collab Only code:
@@ -83,8 +83,9 @@ Cell 2:
 
 # unzip the spark file to the current folder
 !tar xf spark-3.0.0-bin-hadoop3.2.tgz
-
 ```
+
+<img src="img/colab-spark-setup.png" />
 
 Cell 3:
 ```python
@@ -107,13 +108,10 @@ import findspark
 findspark.init()
 ```
 
-Cell 6 (text):
-```shell
-# Not on Colab you should start form HERE:
-```
-
-Cell 7:
+Cell 6:
 ```python
+# Not on Colab you should start form HERE:
+
 from pyspark import SparkContext
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
