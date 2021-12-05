@@ -24,10 +24,12 @@
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
   - [Print schema in df](#print-schema-in-df)
-  - [`.join()` dataframes](#join-dataframes)
+  - [`.join()`/`` dataframes](#join-dataframes)
+  - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
 - [spark-install-macos](#spark-install-macos)
   - [How to start Jupyter Notebook with Spark + GraphFrames](#how-to-start-jupyter-notebook-with-spark--graphframes)
   - [Test Spark in Jupyter Notebook](#test-spark-in-jupyter-notebook)
+- [Reference](#reference)
 
 
 # Concept
@@ -476,10 +478,48 @@ root
  15000
 ```
 
-## `.join()` dataframes
+## `.join()`/`` dataframes
+
 
 ```python
+# join 2 df by `CUSTKEY`
+joined_df = dfOrders.join(dfCustomer, on='CUSTKEY', how='fullouter')
+df2 = joined_df.select('CUSTKEY', 'ORDERKEY')
+df2.show() #view
+```
 
+`how`: str, optional
+    default ``inner``. Must be one of: ``inner``, ``cross``, ``outer``,
+    ``full``, ``fullouter``, ``full_outer``, ``left``, ``leftouter``, ``left_outer``,
+    ``right``, ``rightouter``, ``right_outer``, ``semi``, ``leftsemi``, ``left_semi``,
+    ``anti``, ``leftanti`` and ``left_anti``.
+
+```python
+```
+
+Output:
+```shell
+	CUSTKEY	ORDERKEY
+0	148	3556.0
+1	148	6214.0
+2	148	9413.0
+3	148	10785.0
+4	148	18631.0
+...	...	...
+15495	1138	46694.0
+15496	1138	55237.0
+15497	1138	56261.0
+15498	1413	NaN
+15499	1476	NaN
+15500 rows × 2 columns
+```
+
+## `df1.union(df2)` concat 2 dataframes
+
+The dataframes may need to have identical columns, in which case you can use `withColumn()` to create `normal_1` and `normal_2`
+
+```python
+df_concat = df_1.union(df_2)
 ```
 
 
@@ -677,3 +717,10 @@ Output 4:
 +---+----+----+
 ```
 
+
+# Reference
+
+1. Official pyspark example: 
+https://github.com/spark-examples/pyspark-examples
+
+2. 
