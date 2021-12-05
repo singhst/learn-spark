@@ -23,9 +23,11 @@
   - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
-  - [Print schema in df](#print-schema-in-df)
+  - [`.printSchema()` in df](#printschema-in-df)
   - [`.join()`/`` dataframes](#join-dataframes)
   - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
+  - [`.groupBy().count()`](#groupbycount)
+  - [`df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables](#dfcreateorreplacetempviewsql_table-allows-to-run-sql-queries-once-register-df-as-temporary-tables)
 - [spark-install-macos](#spark-install-macos)
   - [How to start Jupyter Notebook with Spark + GraphFrames](#how-to-start-jupyter-notebook-with-spark--graphframes)
   - [Test Spark in Jupyter Notebook](#test-spark-in-jupyter-notebook)
@@ -442,7 +444,7 @@ dfCustomer = spark.read.csv('customer.csv', header=True, inferSchema=True)
 dfOrders = spark.read.csv('orders.csv', header=True, inferSchema=True)
 ```
 
-## Print schema in df
+## `.printSchema()` in df
 
 ```python
 dfCustomer.printSchema()
@@ -522,6 +524,57 @@ The dataframes may need to have identical columns, in which case you can use `wi
 df_concat = df_1.union(df_2)
 ```
 
+## `.groupBy().count()`
+
+Find `count of orders` of each customer `CUSTKEY` has:
+```python
+dfOrders_groupby = dfOrders.groupBy('CUSTKEY').count()
+dfOrders_groupby.toPandas()
+```
+
+Output:
+```
+	CUSTKEY	count
+0	463	20
+1	1342	20
+2	496	18
+3	148	15
+4	1088	7
+...	...	...
+995	401	12
+996	517	25
+997	422	12
+998	89	7
+999	1138	23
+1000 rows × 2 columns
+```
+
+## `df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables
+
+```python
+dfOrders_groupby.createOrReplaceTempView("sql_table")
+
+# Can run SQL query on it
+df = spark.sql("SELECT customer.CUSTKEY, orders.count FROM customer left outer join orders on customer.CUSTKEY = orders.CUSTKEY")
+df.toPandas()
+```
+
+Output:
+```
+CUSTKEY	count
+0	1	9.0
+1	2	10.0
+2	3	NaN
+3	4	31.0
+4	5	9.0
+...	...	...
+1495	1496	9.0
+1496	1497	NaN
+1497	1498	20.0
+1498	1499	21.0
+1499	1500	NaN
+1500 rows × 2 columns
+```
 
 # spark-install-macos
 
