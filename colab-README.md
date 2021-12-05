@@ -20,25 +20,7 @@ file_download_link = "https://docs.google.com/uc?export=download&id=" + file_id
 !wget  -N -O x.txt "https://docs.google.com/uc?export=download&id=15XVdoHh7gzb2y-o5QwtZkwYSeYXUK-EY"
 ```
 
-```shell
-15XVdoHh7gzb2y-o5QwtZkwYSeYXUK-EY
---2021-12-05 04:33:42--  https://docs.google.com/uc?export=download&id=15XVdoHh7gzb2y-o5QwtZkwYSeYXUK-EY
-Resolving docs.google.com (docs.google.com)... 142.250.73.238, 2607:f8b0:4004:809::200e
-Connecting to docs.google.com (docs.google.com)|142.250.73.238|:443... connected.
-HTTP request sent, awaiting response... 302 Moved Temporarily
-Location: https://doc-0o-74-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/argtaa409b0kv75qrvan3pmm43922la5/1638678750000/10004626043936594729/*/15XVdoHh7gzb2y-o5QwtZkwYSeYXUK-EY?e=download [following]
-Warning: wildcards not supported in HTTP.
---2021-12-05 04:33:42--  https://doc-0o-74-docs.googleusercontent.com/docs/securesc/ha0ro937gcuc7l7deffksulhg5h7mbp1/argtaa409b0kv75qrvan3pmm43922la5/1638678750000/10004626043936594729/*/15XVdoHh7gzb2y-o5QwtZkwYSeYXUK-EY?e=download
-Resolving doc-0o-74-docs.googleusercontent.com (doc-0o-74-docs.googleusercontent.com)... 142.251.33.193, 2607:f8b0:4004:837::2001
-Connecting to doc-0o-74-docs.googleusercontent.com (doc-0o-74-docs.googleusercontent.com)|142.251.33.193|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 511 [text/plain]
-Saving to: ‘x.txt’
-
-x.txt               100%[===================>]     511  --.-KB/s    in 0s      
-
-2021-12-05 04:33:42 (8.96 MB/s) - ‘x.txt’ saved [511/511]
-```
+Output:
 
 <img src="img/colab-download.png" />
 
@@ -55,6 +37,7 @@ data = pd.read_csv(copied_path)
 data
 ```
 
+Output:
 ```
 	Date	Open	High	Low	Close	Volume	Adj Close
 0	2016-09-01	5218.279785	5229.939941	5189.359863	5227.209961	1592520000	5227.209961
