@@ -18,12 +18,14 @@
     - [`.glom().collect()`](#glomcollect)
     - [`.foreach()`](#foreach)
       - [`.map()` v.s. `.foreach()`](#map-vs-foreach)
+    - [`.reduce()`](#reduce)
 - [RDD - Closure](#rdd---closure)
   - [Closure example](#closure-example)
     - [Incorrect way - `global` variable as counter](#incorrect-way---global-variable-as-counter)
     - [Correct way (1) - `rdd.sum()`](#correct-way-1---rddsum)
     - [Correct way (2) - `.accumulator()`](#correct-way-2---accumulator)
       - [Note](#note)
+  - [Accumulator](#accumulator)
 - [Deal with `JSON` data](#deal-with-json-data)
   - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
@@ -343,6 +345,17 @@ The important difference between them is that `map` accumulates all of the resul
 
 * `map` works with two collections of elements: the input collection and the output collection.
 
+### `.reduce()`
+
+```python
+rdd = sc.parallelize([('a',7),('a',2),('b',2)])
+rdd.reduce(lambda a, b: a + b) #Merge the rdd values
+```
+```
+('a',7,'a',2,'b',2)
+```
+
+
 # RDD - Closure
 
 https://mycupoftea00.medium.com/understanding-closure-in-spark-af6f280eebf9
@@ -445,12 +458,18 @@ print(rdd.reduce(lambda x, y: x+y)) # 45
 Output:
 ```
 <class 'pyspark.accumulators.Accumulator'>
-0
+0   #why it is 0? because of "lazy execution", if no actions present, "accum" is not compiled immediately
 45
 45
 45
 45
 ```
+
+## Accumulator
+
+https://spark.apache.org/docs/latest/rdd-programming-guide.html#accumulators
+
+Note from lecture note: `Suggestion: Avoid using accumulators whenever possible. Use reduce() instead.`
 
 # Deal with `JSON` data
 
