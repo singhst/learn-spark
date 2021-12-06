@@ -324,8 +324,12 @@ Just executes inside function for each data element in the **RDD**, but return *
 #### `.map()` v.s. `.foreach()`
 
 Short answer
-* `.map()`: is for transforming one collection into another.
-* `.foreach()`: is for applying an operation/function on each element of a collection of elements 
+* `.map()`: 
+  1. is for transforming one RDD into another, then return the transformed.
+  2. Return a new RDD by applying a function to each element of this RDD.
+* `.foreach()`: is for applying an operation/function on all elements of this RDD.
+
+    Note: RDD = 1 collection of elements
 
 ==> [is-there-a-difference-between-foreach-and-map](https://stackoverflow.com/questions/354909/is-there-a-difference-between-foreach-and-map)
 
