@@ -362,7 +362,12 @@ rdd.reduce(lambda a, b: a + b) #Merge the rdd values
 
 Transformed RDD is thrown away from memory after execution. If afterward transformations/actions need it, PySpark recompiles it.
 
-P.S. Better solution: [`.cache()`/`.persist()`](#cachepersist) the transformed RDD
+<img src="img/spark-rdd-without-cache.png" width="400"> <img src="img/spark-rdd-with-cache.png" width="500">
+
+Image. RDD Without vs With `.cache()` / `.persist()`
+
+P.S. Solution: 
+[`.cache()`/`.persist()`](#cachepersist) the transformed RDD
 
 ```python
 A = sc.parallelize(range(1, 1000)) 
@@ -734,7 +739,7 @@ Output:
 ```python
 # join 2 df by `CUSTKEY`
 joined_df = dfCustomer.join(dfOrders, on='CUSTKEY', how='leftouter')
-df2 = joined_df.select('CUSTKEY', 'ORDERKEY').sort(asc('CUSTKEY'),desc('ORDERKEY'))
+df2 = joined_df.select('CUSTKEY', 'ORDERKEY').sort(asc('CUSTKEY'),desc('ORDERKEY')) #ascending by 'CUSTKEY', descending by 'ORDERKET'
 df2.toPandas() #view
 ```
 
