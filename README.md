@@ -19,6 +19,8 @@
     - [`.foreach()`](#foreach)
       - [`.map()` v.s. `.foreach()`](#map-vs-foreach)
     - [`.reduce()`](#reduce)
+- [Spark recomputes transformations](#spark-recomputes-transformations)
+  - [`.cache()`/`.persist()`](#cachepersist)
 - [RDD - Closure](#rdd---closure)
   - [Closure example](#closure-example)
     - [Incorrect way - `global` variable as counter](#incorrect-way---global-variable-as-counter)
@@ -353,6 +355,51 @@ rdd.reduce(lambda a, b: a + b) #Merge the rdd values
 ```
 ```
 ('a',7,'a',2,'b',2)
+```
+
+
+# Spark recomputes transformations
+
+Transformed RDD is thrown away from memory after execution. If afterward transformations/actions need it, PySpark recompiles it.
+
+P.S. Better solution: [`.cache()`/`.persist()`](#cachepersist) the transformed RDD
+
+```python
+A = sc.parallelize(range(1, 1000)) 
+t = 100
+B = A.filter(lambda x: x*x < t)
+print('B.collect()=', B.collect())  # B.collect()= [1, 2, 3, 4, 5, 6, 7, 8, 9]
+## Here: B finishes execution and is thrown away from memory
+
+t = 200
+C = B.filter(lambda x: x*x < t) # C needs B again, so recomputes B, but t=200 not =100
+                                # So, 
+                                # B = A.filter(lambda x: x*x < 200)
+                                # C = B.filter(lambda x: x*x < 200)
+print('C.collect()=', C.collect())  # C.collect()= [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+print('C.count()=', C.count())      # C.count()= 14
+```
+
+## `.cache()`/`.persist()`
+```python
+A = sc.parallelize(range(1, 1000)) 
+t = 100
+B = A.filter(lambda x: x*x < t)
+print('B.collect()=', B.collect())  # B.collect()= [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+# save this RDD in memory/disk
+B.cache()
+# B.persist()
+
+## Here: B is in memory
+
+t = 200
+C = B.filter(lambda x: x*x < t) # C needs B again, memory stores B, NO need to recompute B
+                                # So, 
+                                # B = previous B
+                                # C = B.filter(lambda x: x*x < 200)
+print('C.collect()=', C.collect())  # C.collect()= [1, 2, 3, 4, 5, 6, 7, 8, 9]
+print('C.count()=', C.count())      # C.count()= 9
 ```
 
 
