@@ -30,6 +30,7 @@
     - [`.join()`](#join)
     - [`spark.sql()` + `df.createOrReplaceTempView("sql_table")`](#sparksql--dfcreateorreplacetempviewsql_table)
   - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
+- [Graph, edge, vertice, Graphframe](#graph-edge-vertice-graphframe)
 - [spark-install-macos](#spark-install-macos)
   - [How to start Jupyter Notebook with Spark + GraphFrames](#how-to-start-jupyter-notebook-with-spark--graphframes)
     - [Start it locally](#start-it-locally)
@@ -220,7 +221,7 @@ Output:
 
 ### `.foreach()` v.s. `.map()`
 
-==> See [Action](#actions) / [`.map()` v.s. `.foreach()`](#`.map()` v.s. `.foreach()`)
+==> See [Action](#actions) / [`.map()` v.s. `.foreach()`](#map-vs-foreach)
 
 
 ## Actions
@@ -594,6 +595,10 @@ The dataframes may need to have identical columns, in which case you can use `wi
 df_concat = df_1.union(df_2)
 ```
 
+# Graph, edge, vertice, Graphframe
+
+[link](https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe)
+
 
 # spark-install-macos
 
@@ -628,7 +633,7 @@ Run the following in macOS terminal,
     $ source ~/.bashrc
     ```
 
-4. Ensure `graphframes-0.8.1-spark3.0-s_2.12.jar` presents in the folder:
+4. Ensure `graphframes-0.8.1-spark3.0-s_2.12.jar` presents in the `/Users/<USER_NAME>/.ivy2/jars` folder:
 
     <img src="img\folder-files.png"  height="300" />
 
