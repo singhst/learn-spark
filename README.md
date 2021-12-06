@@ -221,7 +221,7 @@ Output:
 
 ### `.foreach()` v.s. `.map()`
 
-==> See [Action](#actions) / [`.foreach()`](#foreach)
+==> See [`.foreach()`](#foreach) / [`.map()` v.s. `.foreach()`](#map-vs-foreach)
 
 
 ## Actions
