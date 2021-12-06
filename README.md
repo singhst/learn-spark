@@ -19,6 +19,11 @@
     - [`.foreach()`](#foreach)
       - [`.map()` v.s. `.foreach()`](#map-vs-foreach)
 - [RDD - Closure](#rdd---closure)
+  - [Closure example](#closure-example)
+    - [Incorrect way - `global` variable as counter](#incorrect-way---global-variable-as-counter)
+    - [Correct way (1) - `rdd.sum()`](#correct-way-1---rddsum)
+    - [Correct way (2) - `.accumulator()`](#correct-way-2---accumulator)
+      - [Note](#note)
 - [Deal with `JSON` data](#deal-with-json-data)
   - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
@@ -333,6 +338,109 @@ Just executes inside function for each data element in the **RDD**, but return *
 https://mycupoftea00.medium.com/understanding-closure-in-spark-af6f280eebf9
 
 https://spark.apache.org/docs/latest/rdd-programming-guide.html#understanding-closures-
+
+## Closure example
+
+### Incorrect way - `global` variable as counter
+
+Q: Why printed counter is 0?
+
+Ans: Because 
+1. each executor (i.e. worker node) just applies `increment_counter()` func on its own copy of counter. 
+2. Also, `.foreach()` returns nothing
+
+```python
+counter = 0
+rdd = sc.parallelize(range(10))
+print('rdd.collect() =', rdd.collect())
+
+# Wrong: Don't do this!!
+def increment_counter(x):
+    global counter
+    counter += x
+
+rdd.foreach(increment_counter)
+print('counter =', counter) # just print out `counter` from your driver program, not from Spark
+```
+
+Output:
+```
+rdd.collect() = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+counter = 0
+```
+
+### Correct way (1) - `rdd.sum()`
+
+Correct way to do the above operation:
+1. The `.sum()` action is executed in Spark executor(s)
+2. `.sum()` returns the sum value
+
+```python
+print('rdd.sum() =', rdd.sum())
+```
+
+Output:
+```
+rdd.sum() = 45
+```
+
+### Correct way (2) - `.accumulator()`
+
+Use `.accumulator()` can also solve the issue.
+
+```python
+rdd = sc.parallelize(range(10))
+accum = sc.accumulator(0)
+
+def g(x):
+    global accum
+    accum += x
+
+a = rdd.foreach(g)
+
+print(accum.value)
+```
+
+```
+45
+```
+
+#### Note
+
+Update in transformations may be applied more than once if tasks or job stages are re-executed.
+
+```python
+rdd = sc.parallelize(range(10))
+accum = sc.accumulator(0)
+
+def g(x):
+    global accum
+    accum += x
+    return x * x
+
+a = rdd.map(g)
+print(type(accum))
+print(accum.value) # 0, because no action presents, `accum` is not immediately computed (= laziness/lazy execution)
+# print(a.reduce(lambda x, y: x+y))
+a.cache()
+tmp = a.count()
+print(accum.value) # 45
+print(rdd.reduce(lambda x, y: x+y)) # 45
+
+tmp = a.count()
+print(accum.value) # 45
+print(rdd.reduce(lambda x, y: x+y)) # 45
+```
+
+Output:
+```
+<class 'pyspark.accumulators.Accumulator'>
+0
+45
+45
+45
+45
+```
 
 # Deal with `JSON` data
 
