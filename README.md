@@ -3,7 +3,7 @@
 - [pyspark-note](#pyspark-note)
 - [Concept](#concept)
   - [Where code runs](#where-code-runs)
-- [Basic operation](#basic-operation)
+- [RDD Basic operation](#rdd-basic-operation)
   - [Transformations](#transformations)
     - [`.map()` v.s. `.mapPartitions()` v.s. `.mapPartitionsWithIndex()`](#map-vs-mappartitions-vs-mappartitionswithindex)
       - [1. `.map()`](#1-map)
@@ -15,20 +15,20 @@
     - [`sc.parallelize()`](#scparallelize)
     - [`.count()`](#count)
     - [`.collect()`](#collect)
-    - [`.getNumPartitions()`](#getnumpartitions)
     - [`.glom().collect()`](#glomcollect)
+    - [`.getNumPartitions()`](#getnumpartitions)
     - [`.foreach()`](#foreach)
       - [`.map()` v.s. `.foreach()`](#map-vs-foreach)
     - [`.reduce()`](#reduce)
-- [Spark recomputes transformations](#spark-recomputes-transformations)
-  - [`.cache()`/`.persist()`](#cachepersist)
-- [RDD - Closure](#rdd---closure)
-  - [Closure example](#closure-example)
-    - [Incorrect way - `global` variable as counter](#incorrect-way---global-variable-as-counter)
-    - [Correct way (1) - `rdd.sum()`](#correct-way-1---rddsum)
-    - [Correct way (2) - `.accumulator()`](#correct-way-2---accumulator)
+  - [Spark recomputes transformations](#spark-recomputes-transformations)
+    - [`.cache()`/`.persist()`](#cachepersist)
+  - [RDD - Closure](#rdd---closure)
+    - [Closure example](#closure-example)
+      - [Incorrect way - `global` variable as counter](#incorrect-way---global-variable-as-counter)
+      - [Correct way (1) - `rdd.sum()`](#correct-way-1---rddsum)
+      - [Correct way (2) - `.accumulator()`](#correct-way-2---accumulator)
       - [Note](#note)
-  - [Accumulator](#accumulator)
+    - [Accumulator](#accumulator)
 - [Deal with `JSON` data](#deal-with-json-data)
   - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
@@ -73,7 +73,7 @@ Most Python code runs in driver (in our local PC), except for code passed to RDD
 * Transformations run at executors (in workers), 
 * actions run at executors and driver.
 
-# Basic operation
+# RDD Basic operation
 
 RDD Programming Guide
 
@@ -302,21 +302,6 @@ Output:
 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
 ```
 
-### `.getNumPartitions()`
-
-Returns number of partitions in this RDD
-
-```python
-#.getNumPartitions()
-# Gets number of partitions in this RDD
-print('rdd.getNumPartitions()=', rdd.getNumPartitions())
-```
-
-Output:
-```shell
-4
-```
-
 ### `.glom().collect()`
 
 Returns the content of each partitions as `nested list` / `list of list`
@@ -335,6 +320,21 @@ Output:
  [50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74], 
  [75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]
 ]
+```
+
+### `.getNumPartitions()`
+
+Returns number of partitions in this RDD
+
+```python
+#.getNumPartitions()
+# Gets number of partitions in this RDD
+print('rdd.getNumPartitions()=', rdd.getNumPartitions())
+```
+
+Output:
+```shell
+4
 ```
 
 ### `.foreach()`
@@ -374,7 +374,7 @@ rdd.reduce(lambda a, b: a + b) #Merge the rdd values
 ```
 
 
-# Spark recomputes transformations
+## Spark recomputes transformations
 
 Transformed RDD is thrown away from memory after execution. If afterward transformations/actions need it, PySpark recompiles it.
 
@@ -401,7 +401,7 @@ print('C.collect()=', C.collect())  # C.collect()= [1, 2, 3, 4, 5, 6, 7, 8, 9, 1
 print('C.count()=', C.count())      # C.count()= 14
 ```
 
-## `.cache()`/`.persist()`
+### `.cache()`/`.persist()`
 ```python
 A = sc.parallelize(range(1, 1000)) 
 t = 100
@@ -424,15 +424,15 @@ print('C.count()=', C.count())      # C.count()= 9
 ```
 
 
-# RDD - Closure
+## RDD - Closure
 
 https://mycupoftea00.medium.com/understanding-closure-in-spark-af6f280eebf9
 
 https://spark.apache.org/docs/latest/rdd-programming-guide.html#understanding-closures-
 
-## Closure example
+### Closure example
 
-### Incorrect way - `global` variable as counter
+#### Incorrect way - `global` variable as counter
 
 Q: Why printed counter is 0?
 
@@ -460,7 +460,7 @@ rdd.collect() = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 counter = 0
 ```
 
-### Correct way (1) - `rdd.sum()`
+#### Correct way (1) - `rdd.sum()`
 
 Correct way to do the above operation:
 1. The `.sum()` action is executed in Spark executor(s)
@@ -475,7 +475,7 @@ Output:
 rdd.sum() = 45
 ```
 
-### Correct way (2) - `.accumulator()`
+#### Correct way (2) - `.accumulator()`
 
 Use `.accumulator()` can also solve the issue.
 
@@ -533,7 +533,7 @@ Output:
 45
 ```
 
-## Accumulator
+### Accumulator
 
 https://spark.apache.org/docs/latest/rdd-programming-guide.html#accumulators
 
