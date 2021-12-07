@@ -2,6 +2,7 @@
 
 - [pyspark-note](#pyspark-note)
 - [Concept](#concept)
+  - [Where code runs](#where-code-runs)
 - [Basic operation](#basic-operation)
   - [Transformations](#transformations)
     - [`.map()` v.s. `.mapPartitions()` v.s. `.mapPartitionsWithIndex()`](#map-vs-mappartitions-vs-mappartitionswithindex)
@@ -61,6 +62,16 @@ The records/items/elemets are stored in RDD(s).
 Each RDD composists of `Partitions`; each `Partition` contains equal number of `items`/`elements`.
 
 <img src="img\rddDataset-partitions-items.png" height="200"/>
+
+## Where code runs
+
+<img src="img/cluster-overview.png" height="200"/>
+
+Source: https://spark.apache.org/docs/latest/cluster-overview.html
+
+Most Python code runs in driver (in our local PC), except for code passed to RDD transformations. 
+* Transformations run at executors (in workers), 
+* actions run at executors and driver.
 
 # Basic operation
 
