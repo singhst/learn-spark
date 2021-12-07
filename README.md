@@ -40,6 +40,11 @@
     - [`spark.sql()` + `df.createOrReplaceTempView("sql_table")`](#sparksql--dfcreateorreplacetempviewsql_table)
   - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
 - [Graph, edge, vertice, Graphframe](#graph-edge-vertice-graphframe)
+  - [`GraphFrame(v, e)`, Create GraphFrame](#graphframev-e-create-graphframe)
+  - [Explore `GraphFrame`](#explore-graphframe)
+  - [Filter, `g.filterVerices()` `g.filterEdges()`](#filter-gfilterverices-gfilteredges)
+  - [`.find("(a)-[e]->(b)")`, Motif finding](#finda-e-b-motif-finding)
+  - [Subgraphs](#subgraphs)
 - [spark-install-macos](#spark-install-macos)
   - [How to start Jupyter Notebook with Spark + GraphFrames](#how-to-start-jupyter-notebook-with-spark--graphframes)
     - [Start it locally](#start-it-locally)
@@ -786,7 +791,146 @@ df_concat = df_1.union(df_2)
 
 # Graph, edge, vertice, Graphframe
 
-[link](https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe)
+Credit to [link](https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe)
+
+## `GraphFrame(v, e)`, Create GraphFrame
+
+```python
+# Vertics DataFrame
+v = spark.createDataFrame([
+  ("a", "Alice", 34),
+  ("b", "Bob", 36),
+  ("c", "Charlie", 37),
+  ("d", "David", 29),
+  ("e", "Esther", 32),
+  ("f", "Fanny", 38),
+  ("g", "Gabby", 60)
+], ["id", "name", "age"])
+
+# Edges DataFrame
+e = spark.createDataFrame([
+  ("a", "b", "friend"),
+  ("b", "c", "follow"), # b and c follow each other
+  ("c", "b", "follow"), #
+  ("f", "c", "follow"),
+  ("e", "f", "follow"),
+  ("e", "d", "friend"),
+  ("d", "a", "friend"),
+  ("a", "e", "friend"),
+  ("g", "e", "follow")
+], ["src", "dst", "relationship"])
+
+# Create a GraphFrame
+g = GraphFrame(v, e)
+
+g.vertices.show()
+g.edges.show()
+```
+
+```python
+# Vertics DataFrame
+v = spark.createDataFrame([
+    ("a", "Alice", 34),
+    ("b", "Bob", 36),
+    ("c", "Charlie", 37),
+    ("d", "David", 29),
+    ("e", "Esther", 32),
+    ("f", "Fanny", 38),
+    ("g", "Gabby", 60)
+], ["id", "name", "age"])
+# Edges DataFrame
+e = spark.createDataFrame([
+    ("a", "b", "follow"),
+    ("c", "a", "friend"),
+    ("b", "c", "follow"),
+    ("d", "a", "follow"),
+    ("f", "c", "follow"),
+    ("f", "d", "follow"),
+    ("f", "b", "follow"),
+    ("c", "d", "follow"),
+    ("g", "a", "friend"),
+    ("g", "d", "friend"),
+    ("g", "c", "friend"),
+    ("e", "a", "follow"),
+    ("e", "d", "follow")
+], ["src", "dst", "relationship"])
+
+# Create a GraphFrame
+g = GraphFrame(v, e)
+```
+
+## Explore `GraphFrame`
+
+Credit to [link](https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe)
+
+```python
+g.triplets.show() # display all
+g.vertices.show() # display vertices
+g.edges.show()    # display edges
+g.degrees.show()
+g.inDegrees.show()
+g.outDegrees.show()
+```
+
+## Filter, `g.filterVerices()` `g.filterEdges()`
+
+Returns `GraphFrame`, not `DataFrame`.
+
+Credit to [link](https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe)
+
+```python
+g.filterVerices("columnName > 30")
+g.filterEdges("columnName = 30")
+g.dropIsolatedVertices() #Drop isolated vertices (users) which are not contained in any edges (relationships).
+                         #Vertices without incoming / outgoing edges
+```
+
+## `.find("(a)-[e]->(b)")`, Motif finding
+
+Find the edges `e` from vertex `a` to vertex `b`.
+
+P.S. `.find()` returns `sparkDF` DataFrame.
+
+Credit to [link](https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe)
+
+```python
+g.find("(a)-[]->(b);(b)-[]->(a)").filter("a.id < b.id") # A and B follow/friend each other; 
+                                                        # .filter() out "B follows/friends back A" rows, 
+                                                        # just keeps "A follows/friends B" rows
+g.find("(a)-[]->(b); !(b)-[]->(a)").filter("a.id < b.id") # jsut A follows B, B not follows A
+g.find("!()-[]->(a)") # find vertices without incoming edges
+g.find("(a)-[e]->(b)").filter("e.relationship = 'follow'") # find A follows B,
+```
+
+## Subgraphs
+
+Credit to `msbd5003`.
+
+```python
+# Build subgraph based on conditions, i.e. subgraph contains (v,e)
+# Select subgraph of users older than 30, and relationships of type "friend".
+# Drop isolated vertices (users) which are not contained in any edges (relationships).
+g1 = g.filterVertices("age > 30").filterEdges("relationship = 'friend'")\
+      .dropIsolatedVertices()
+g1.vertices.show()
+g1.edges.show()
+```
+Output:
+```
++---+------+---+
+| id|  name|age|
++---+------+---+
+|  e|Esther| 32|
+|  b|   Bob| 36|
+|  a| Alice| 34|
++---+------+---+
++---+---+------------+
+|src|dst|relationship|
++---+---+------------+
+|  a|  e|      friend|
+|  a|  b|      friend|
++---+---+------------+
+```
 
 
 # spark-install-macos
@@ -915,9 +1059,12 @@ OR
 from pyspark import SparkContext
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
+from graphframes import *
 
-spark = SparkSession.builder.getOrCreate()
-spark
+spark = SparkSession.builder.master("local[*]").getOrCreate()
+sc = spark.sparkContext
+
+sc
 ```
 
 Output:
