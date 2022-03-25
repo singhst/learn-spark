@@ -30,7 +30,9 @@
       - [Note](#note)
     - [Accumulator](#accumulator)
 - [Deal with `JSON` data](#deal-with-json-data)
-  - [Details](#details)
+  - [Read `JSON` string to](#read-json-string-to)
+  - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
+    - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
   - [`.printSchema()` in df](#printschema-in-df)
@@ -40,6 +42,7 @@
     - [`.join()`](#join)
     - [`spark.sql()` + `df.createOrReplaceTempView("sql_table")`](#sparksql--dfcreateorreplacetempviewsql_table)
   - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
+  - [UDF `df.withColumn`, user defined function](#udf-dfwithcolumn-user-defined-function)
 - [Graph, edge, vertice, Graphframe](#graph-edge-vertice-graphframe)
   - [`GraphFrame(v, e)`, Create GraphFrame](#graphframev-e-create-graphframe)
   - [Explore `GraphFrame`](#explore-graphframe)
@@ -541,6 +544,12 @@ Note from lecture note: `Suggestion: Avoid using accumulators whenever possible.
 
 # Deal with `JSON` data
 
+** Most useful ==> https://zhuanlan.zhihu.com/p/267353998
+
+## Read `JSON` string to 
+
+## Read `JSON` to spark Dataframe first
+
 **https://sparkbyexamples.com/pyspark/pyspark-maptype-dict-examples/**
 
 Steps,
@@ -549,7 +558,7 @@ Steps,
 3. pySpark dataframe with `map type` 
 4. access PySpark MapType Elements
 
-## Details
+### Details
 
 1. 
     ```python
@@ -799,6 +808,10 @@ The dataframes may need to have identical columns, in which case you can use `wi
 ```python
 df_concat = df_1.union(df_2)
 ```
+
+## UDF `df.withColumn`, user defined function
+
+[Reference](https://sparkbyexamples.com/pyspark/pyspark-udf-user-defined-function/)
 
 # Graph, edge, vertice, Graphframe
 
