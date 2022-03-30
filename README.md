@@ -89,7 +89,7 @@ RDD Programming Guide
 
 ==> https://spark.apache.org/docs/latest/rdd-programming-guide.html
 
-> All transformations in Spark are _**lazy**_, in that they do not compute their results right away. Instead, they just remember the transformations applied to some base dataset (e.g. a file). The transformations are only computed when an _**action**_ requires a result to be returned to the driver program.
+> All _**transformations**_ in Spark are _**lazy**_, in that they do not compute their results right away. Instead, they just remember the transformations applied to some base dataset (e.g. a file). The _**transformations**_ are only computed when an _**action**_ requires a result to be returned to the driver program.
 
 --- by [RDD Programming Guide](https://spark.apache.org/docs/latest/rdd-programming-guide.html)
 
