@@ -68,6 +68,8 @@ Cell 2:
 !apt-get install openjdk-8-jdk-headless -qq > /dev/null
 
 # install spark (change the version number if needed)
+## q, --quiet:	Turn off wget's output
+## -N:	don't download a newer copy of a file if it exists already
 !wget -q -N https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
 
 # unzip the spark file to the current folder
