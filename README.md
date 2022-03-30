@@ -32,6 +32,9 @@
 - [Deal with `JSON` data](#deal-with-json-data)
   - [[1] Load `.json`/`.json.gz` files to pySpark dataframe](#1-load-jsonjsongz-files-to-pyspark-dataframe)
   - [[2] Load JSON from String / `.txt` files to pySpark dataframe](#2-load-json-from-string--txt-files-to-pyspark-dataframe)
+    - [Read json from text files](#read-json-from-text-files)
+    - [[a] WITHOUT schema definition](#a-without-schema-definition)
+    - [[b] WITH schema definition](#b-with-schema-definition)
   - [Parse JSON from RESTful API](#parse-json-from-restful-api)
   - [[NOT GOOD] ~~Read `JSON` string to pySpark dataframe~~](#not-good-read-json-string-to-pyspark-dataframe)
     - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
@@ -615,7 +618,7 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
 {"Zipcode":2999,"ZipCodeType":"9999999STANDARD","City":"PASEO COSTA DEL SUR","State":"PR"}
 ```
 
-1.  Read json from text files
+### Read json from text files
     ```python
     # (1) read json from text file
     dfFromTxt=spark.read.text("file*.txt")
@@ -639,7 +642,46 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
     +------------------------------------------------------------------------------------------+
     ```
 
-2.  Define schema
+### [a] WITHOUT schema definition
+
+    ```python
+      # Originally
+      # json_df = spark.read.json(dfFromTxt.rdd.map(lambda row: row.value))
+
+      # Explain
+      list_of_string = dfFromTxt.rdd.map(lambda row: row.value)
+      display(list_of_string.collect())
+
+      json_df = spark.read.json(list_of_string)
+      json_df.printSchema()
+      json_df.show()
+    ```
+
+    Output
+    ```shell
+      ['{"Zipcode":299999,"ZipCodeType":"292999STANDARD","City":"PARC PARQUE","State":"PR"}',
+      '{"Zipcode":2999,"ZipCodeType":"9999999STANDARD","City":"PASEO COSTA DEL SUR","State":"PR"}',
+      '{"Zipcode":703,"ZipCodeType":"STANDARD","City":"PARC PARQUE","State":"PR"}',
+      '{"Zipcode":704,"ZipCodeType":"STANDARD","City":"PASEO COSTA DEL SUR","State":"PR"}']
+      root
+        |-- City: string (nullable = true)
+        |-- State: string (nullable = true)
+        |-- ZipCodeType: string (nullable = true)
+        |-- Zipcode: long (nullable = true)
+
+      +-------------------+-----+---------------+-------+
+      |               City|State|    ZipCodeType|Zipcode|
+      +-------------------+-----+---------------+-------+
+      |        PARC PARQUE|   PR| 292999STANDARD| 299999|
+      |PASEO COSTA DEL SUR|   PR|9999999STANDARD|   2999|
+      |        PARC PARQUE|   PR|       STANDARD|    703|
+      |PASEO COSTA DEL SUR|   PR|       STANDARD|    704|
+      +-------------------+-----+---------------+-------+
+    ```
+
+### [b] WITH schema definition
+
+1.  Define schema
 
     ```python
     # (2) Create Schema of the JSON column
@@ -658,7 +700,7 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
     StructType(List(StructField(Zipcode,StringType,true),StructField(ZipCodeType,StringType,true),StructField(City,StringType,true),StructField(State,StringType,true)))
     ```
 
-3.  Convert json column to multiple columns
+2.  Convert json column to multiple columns
 
     ```python
     # (3) Convert json column to multiple columns
