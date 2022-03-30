@@ -704,7 +704,7 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
     _json
     ```
 
-    Output (`list of dict`)
+    Output (`list of dict` in py)
     ```python
       {'RequestAddress': {'AddressLine': ['何文田邨']},
        'SuggestedAddress': [{'Address': {'PremisesAddress': {'ChiPremisesAddress': {'BuildingName': '何文田政府合署',
@@ -819,18 +819,18 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
 
     ```python
       # Explode Array to Structure
-      explodeArrarDF = readComplexJSONDF.withColumn('Exp_RESULTS', F.explode(F.col('SuggestedAddress'))).drop('SuggestedAddress')
+      explodeArrarDF = readComplexJSONDF.withColumn('Explode_SuggestedAddress', F.explode(F.col('SuggestedAddress'))).drop('SuggestedAddress')
       explodeArrarDF.printSchema()
       explodeArrarDF.show()
 
       # Read location and name
-      dfReadSpecificStructure = explodeArrarDF.select("Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.BuildingName",
-                                                      "Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.ChiDistrict.*",
-                                                      "Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.ChiEstate.*",
-                                                      "Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.ChiStreet.*",
-                                                      "Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.Region",
-                                                      "Exp_RESULTS.Address.PremisesAddress.GeospatialInformation.*",
-                                                      "Exp_RESULTS.ValidationInformation.*") 
+      dfReadSpecificStructure = explodeArrarDF.select("Explode_SuggestedAddress.Address.PremisesAddress.ChiPremisesAddress.BuildingName",
+                                                      "Explode_SuggestedAddress.Address.PremisesAddress.ChiPremisesAddress.ChiDistrict.*",
+                                                      "Explode_SuggestedAddress.Address.PremisesAddress.ChiPremisesAddress.ChiEstate.*",
+                                                      "Explode_SuggestedAddress.Address.PremisesAddress.ChiPremisesAddress.ChiStreet.*",
+                                                      "Explode_SuggestedAddress.Address.PremisesAddress.ChiPremisesAddress.Region",
+                                                      "Explode_SuggestedAddress.Address.PremisesAddress.GeospatialInformation.*",
+                                                      "Explode_SuggestedAddress.ValidationInformation.*") 
       dfReadSpecificStructure.show(truncate=False)
     ```
 
@@ -840,7 +840,7 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
         |-- RequestAddress: struct (nullable = true)
         |    |-- AddressLine: array (nullable = true)
         |    |    |-- element: string (containsNull = true)
-        |-- Exp_RESULTS: struct (nullable = true)
+        |-- Explode_SuggestedAddress: struct (nullable = true)
         |    |-- Address: struct (nullable = true)
         |    |    |-- PremisesAddress: struct (nullable = true)
         |    |    |    |-- ChiPremisesAddress: struct (nullable = true)
@@ -872,13 +872,13 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
         |    |-- ValidationInformation: struct (nullable = true)
         |    |    |-- Score: double (nullable = true)
 
-      +--------------+------------------------------+
-      |RequestAddress|                   Exp_RESULTS|
-      +--------------+------------------------------+
-      |  [[何文田邨]] | [[[[何文田政府合署, [九龍城...  |
-      |  [[何文田邨]] | [[[[何文田政府合署, [九龍城...  |
-      |  [[何文田邨]] | [[[[何文田廣場, [九龍城區]...   |
-      +--------------+------------------------------+
+      +--------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+      |RequestAddress|  Explode_SuggestedAddress                                                                                                                                                                                                                        |
+      +--------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+      |[[何文田邨]]   |  [[[[何文田政府合署, [九龍城區], [何文田邨], [88, 忠孝街], 九龍], [HO MAN TIN GOVERNMENT OFFICES, [KOWLOON CITY DISTRICT], [HO MAN TIN ESTATE], [88, CHUNG HAU STREET], KLN], 3658519520T20050430, [836597, 22.31468, 114.18007, 819521]]], [75.0]]     |
+      |[[何文田邨]]   |  [[[[何文田政府合署, [九龍城區], [何文田邨], [68, 佛光街], 九龍], [HO MAN TIN GOVERNMENT OFFICES, [KOWLOON CITY DISTRICT], [HO MAN TIN ESTATE], [68, FAT KWONG STREET], KLN], 3658519520T20050430, [836597, 22.31468, 114.18007, 819521]]], [75.0]]     |
+      |[[何文田邨]]   |  [[[[何文田廣場, [九龍城區], [何文田邨], [80, 佛光街], 九龍], [HOMANTIN PLAZA, [KOWLOON CITY DISTRICT], [HO MAN TIN ESTATE], [80, FAT KWONG STREET], KLN], 3677919691P20060311, [836780, 22.31622, 114.18184, 819692]]], [75.0]]                       |
+      +--------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
       +--------------+----------+----------+--------------+----------+------+-------+--------+---------+--------+-----+
       |BuildingName  |DcDistrict|EstateName|BuildingNoFrom|StreetName|Region|Easting|Latitude|Longitude|Northing|Score|
