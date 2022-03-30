@@ -89,6 +89,10 @@ RDD Programming Guide
 
 ==> https://spark.apache.org/docs/latest/rdd-programming-guide.html
 
+> All transformations in Spark are _**lazy**_, in that they do not compute their results right away. Instead, they just remember the transformations applied to some base dataset (e.g. a file). The transformations are only computed when an _**action**_ requires a result to be returned to the driver program.
+
+--- by [RDD Programming Guide](https://spark.apache.org/docs/latest/rdd-programming-guide.html)
+
 ## Transformations
 
 ### `.map()` v.s. `.mapPartitions()` v.s. `.mapPartitionsWithIndex()`
@@ -387,6 +391,8 @@ rdd.reduce(lambda a, b: a + b) #Merge the rdd values
 ## Spark recomputes transformations
 
 Transformed RDD is thrown away from memory after execution. If afterward transformations/actions need it, PySpark recompiles it.
+
+> By default, each transformed RDD may be recomputed each time you run an action on it. However, you may also persist an RDD in memory using the persist (or cache) method, in which case Spark will keep the elements around on the cluster for much faster access the next time you query it. There is also support for persisting RDDs on disk, or replicated across multiple nodes.
 
 <img src="img/spark-rdd-without-cache.png" width="400"> <img src="img/spark-rdd-with-cache.png" width="500">
 
