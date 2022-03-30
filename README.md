@@ -30,13 +30,17 @@
       - [Note](#note)
     - [Accumulator](#accumulator)
 - [Deal with `JSON` data](#deal-with-json-data)
-  - [Read `JSON` string to](#read-json-string-to)
-  - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
+  - [[1] Load `.json`/`.json.gz` files to pySpark dataframe](#1-load-jsonjsongz-files-to-pyspark-dataframe)
+  - [[2] Load JSON from String / `.txt` files to pySpark dataframe](#2-load-json-from-string--txt-files-to-pyspark-dataframe)
+  - [Parse JSON from RESTful API](#parse-json-from-restful-api)
+  - [[NOT GOOD] ~~Read `JSON` string to pySpark dataframe~~](#not-good-read-json-string-to-pyspark-dataframe)
+    - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
     - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
   - [`.printSchema()` in df](#printschema-in-df)
   - [`.groupBy().count()`](#groupbycount)
+  - [`groupBy().agg()`](#groupbyagg)
   - [`df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables](#dfcreateorreplacetempviewsql_table-allows-to-run-sql-queries-once-register-df-as-temporary-tables)
   - [`.join()`/`spark.sql()` dataframes](#joinsparksql-dataframes)
     - [`.join()`](#join)
@@ -546,9 +550,348 @@ Note from lecture note: `Suggestion: Avoid using accumulators whenever possible.
 
 ** Most useful ==> https://zhuanlan.zhihu.com/p/267353998
 
-## Read `JSON` string to 
+## [1] Load `.json`/`.json.gz` files to pySpark dataframe
 
-## Read `JSON` to spark Dataframe first
+**i.e. whole record is present in single line**
+
+Example, a `.json` / `.json.gz`,
+
+1. `jsonFile1.json` (2 records exist)
+```json
+[{"RecordNumber": 2, "Zipcode": 99999, "ZipCodeType": "STANDARD", "City": "99 PASEO COSTA DEL SUR", "State": "PR"},{"RecordNumber": 10, "Zipcode": 999999999, "ZipCodeType": "STANDARD", "City": "9 BDA SAN LUIS", "State": "PR"}]
+```
+
+2. `jsonFile2.json` (2 records exist)
+```json
+[{"RecordNumber": 99999, "Zipcode": 704, "ZipCodeType": "STANDARD", "City": "xxx PASEO COSTA DEL SUR", "State": "PR"},{"RecordNumber": 999999, "Zipcode": 709, "ZipCodeType": "STANDARD", "City": "xxxx BDA SAN LUIS", "State": "PR"}]
+```
+
+Code:
+```python
+# use `multiline = true` to read multi line JSON file
+jsonFiles = ['jsonFile1','jsonFile2']
+jsonFiles = [f+'.json' for f in jsonFiles]
+print(jsonFiles)
+df = spark.read.option('multiline', 'true').json('jsonFile*.json')
+df.cache()
+
+df.printSchema()
+df.toPandas()
+```
+
+Output
+```shell
+['jsonFile1.json', 'jsonFile2.json']
+root
+ |-- City: string (nullable = true)
+ |-- RecordNumber: long (nullable = true)
+ |-- State: string (nullable = true)
+ |-- ZipCodeType: string (nullable = true)
+ |-- Zipcode: long (nullable = true)
+
++--------------------+------------+-----+-----------+---------+
+|                City|RecordNumber|State|ZipCodeType|  Zipcode|
++--------------------+------------+-----+-----------+---------+
+|xxx PASEO COSTA D...|       99999|   PR|   STANDARD|      704|
+|   xxxx BDA SAN LUIS|      999999|   PR|   STANDARD|      709|
+|99 PASEO COSTA DE...|           2|   PR|   STANDARD|    99999|
+|      9 BDA SAN LUIS|          10|   PR|   STANDARD|999999999|
++--------------------+------------+-----+-----------+---------+
+```
+
+## [2] Load JSON from String / `.txt` files to pySpark dataframe
+
+https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-file/
+
+`file1.txt`
+```txt
+{"Zipcode":703,"ZipCodeType":"STANDARD","City":"PARC PARQUE","State":"PR"}
+{"Zipcode":704,"ZipCodeType":"STANDARD","City":"PASEO COSTA DEL SUR","State":"PR"}
+```
+
+`file2.txt`
+```txt
+{"Zipcode":299999,"ZipCodeType":"292999STANDARD","City":"PARC PARQUE","State":"PR"}
+{"Zipcode":2999,"ZipCodeType":"9999999STANDARD","City":"PASEO COSTA DEL SUR","State":"PR"}
+```
+
+1.  Read json from text files
+    ```python
+    # (1) read json from text file
+    dfFromTxt=spark.read.text("file*.txt")
+
+    dfFromTxt.printSchema()
+    dfFromTxt.show(truncate=False)
+    ```
+
+    Output
+    ```shell
+    root
+      |-- value: string (nullable = true)
+
+    +------------------------------------------------------------------------------------------+
+    |value                                                                                     |
+    +------------------------------------------------------------------------------------------+
+    |{"Zipcode":299999,"ZipCodeType":"292999STANDARD","City":"PARC PARQUE","State":"PR"}       |
+    |{"Zipcode":2999,"ZipCodeType":"9999999STANDARD","City":"PASEO COSTA DEL SUR","State":"PR"}|
+    |{"Zipcode":703,"ZipCodeType":"STANDARD","City":"PARC PARQUE","State":"PR"}                |
+    |{"Zipcode":704,"ZipCodeType":"STANDARD","City":"PASEO COSTA DEL SUR","State":"PR"}        |
+    +------------------------------------------------------------------------------------------+
+    ```
+
+2.  Define schema
+
+    ```python
+    # (2) Create Schema of the JSON column
+    from pyspark.sql.types import StructType,StructField, StringType
+    schema = StructType([ 
+        StructField("Zipcode",StringType(),True), 
+        StructField("ZipCodeType",StringType(),True), 
+        StructField("City",StringType(),True), 
+        StructField("State", StringType(), True)
+      ])
+    schema
+    ```
+
+    Output
+    ```shell
+    StructType(List(StructField(Zipcode,StringType,true),StructField(ZipCodeType,StringType,true),StructField(City,StringType,true),StructField(State,StringType,true)))
+    ```
+
+3.  Convert json column to multiple columns
+
+    ```python
+    # (3) Convert json column to multiple columns
+    from pyspark.sql.functions import col,from_json
+    dfJSON = dfFromTxt.withColumn("jsonData",from_json(col("value"),schema)) \
+                      .select("jsonData.*")
+    dfJSON.printSchema()
+    dfJSON.show(truncate=False)
+    ```
+
+    Output
+    ```shell
+    root
+      |-- Zipcode: string (nullable = true)
+      |-- ZipCodeType: string (nullable = true)
+      |-- City: string (nullable = true)
+      |-- State: string (nullable = true)
+
+    +-------+---------------+-------------------+-----+
+    |Zipcode|ZipCodeType    |City               |State|
+    +-------+---------------+-------------------+-----+
+    |299999 |292999STANDARD |PARC PARQUE        |PR   |
+    |2999   |9999999STANDARD|PASEO COSTA DEL SUR|PR   |
+    |703    |STANDARD       |PARC PARQUE        |PR   |
+    |704    |STANDARD       |PASEO COSTA DEL SUR|PR   |
+    +-------+---------------+-------------------+-----+
+    ```
+
+## Parse JSON from RESTful API
+
+1.  Call API
+    ```python
+    url = f'https://www.als.ogcio.gov.hk/lookup'
+    headers = {'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36'}
+    params = {'q': requestAddress, 
+              'n': 3
+              }
+    # sending get request and saving the response as response object
+    response = requests.get(url=url, headers=headers, params=params)
+
+    _json = response.json()
+    _json
+    ```
+
+    Output (`list of dict`)
+    ```python
+      {'RequestAddress': {'AddressLine': ['何文田邨']},
+       'SuggestedAddress': [{'Address': {'PremisesAddress': {'ChiPremisesAddress': {'BuildingName': '何文田政府合署',
+            'ChiDistrict': {'DcDistrict': '九龍城區'},
+            'ChiEstate': {'EstateName': '何文田邨'},
+            'ChiStreet': {'BuildingNoFrom': '88', 'StreetName': '忠孝街'},
+            'Region': '九龍'},
+          'EngPremisesAddress': {'BuildingName': 'HO MAN TIN GOVERNMENT OFFICES',
+            'EngDistrict': {'DcDistrict': 'KOWLOON CITY DISTRICT'},
+            'EngEstate': {'EstateName': 'HO MAN TIN ESTATE'},
+            'EngStreet': {'BuildingNoFrom': '88', 'StreetName': 'CHUNG HAU STREET'},
+            'Region': 'KLN'},
+          'GeoAddress': '3658519520T20050430',
+          'GeospatialInformation': {'Easting': '836597',
+            'Latitude': '22.31468',
+            'Longitude': '114.18007',
+            'Northing': '819521'}}},
+        'ValidationInformation': {'Score': 75.0}},
+        {'Address': {'PremisesAddress': {'ChiPremisesAddress': {'BuildingName': '何文田廣場',
+            'ChiDistrict': {'DcDistrict': '九龍城區'},
+            'ChiEstate': {'EstateName': '何文田邨'},
+            'ChiStreet': {'BuildingNoFrom': '80', 'StreetName': '佛光街'},
+            'Region': '九龍'},
+          'EngPremisesAddress': {'BuildingName': 'HOMANTIN PLAZA',
+            'EngDistrict': {'DcDistrict': 'KOWLOON CITY DISTRICT'},
+            'EngEstate': {'EstateName': 'HO MAN TIN ESTATE'},
+            'EngStreet': {'BuildingNoFrom': '80', 'StreetName': 'FAT KWONG STREET'},
+            'Region': 'KLN'},
+          'GeoAddress': '3677919691P20060311',
+          'GeospatialInformation': {'Easting': '836780',
+            'Latitude': '22.31622',
+            'Longitude': '114.18184',
+            'Northing': '819692'}}},
+        'ValidationInformation': {'Score': 75.0}},
+        {'Address': {'PremisesAddress': {'ChiPremisesAddress': {'BuildingName': '靜文樓',
+            'ChiDistrict': {'DcDistrict': '九龍城區'},
+            'ChiEstate': {'EstateName': '何文田邨'},
+            'ChiStreet': {'BuildingNoFrom': '68', 'StreetName': '佛光街'},
+            'Region': '九龍'},
+          'EngPremisesAddress': {'BuildingName': 'CHING MAN HOUSE',
+            'EngDistrict': {'DcDistrict': 'KOWLOON CITY DISTRICT'},
+            'EngEstate': {'EstateName': 'HO MAN TIN ESTATE'},
+            'EngStreet': {'BuildingNoFrom': '68', 'StreetName': 'FAT KWONG STREET'},
+            'Region': 'KLN'},
+          'GeoAddress': '3683619541T20050430',
+          'GeospatialInformation': {'Easting': '836839',
+            'Latitude': '22.31497',
+            'Longitude': '114.18242',
+            'Northing': '819553'}}},
+        'ValidationInformation': {'Score': 62.95}}
+        ]
+      }
+    ```
+
+2.  Convert `list of dict` to PySpark RDD to Dataframe
+
+    ```python
+      rdd = sc.parallelize([_json])
+
+      readComplexJSONDF = spark.read.option("multiLine","true").json(rdd)
+      readComplexJSONDF.show(truncate=False)
+      readComplexJSONDF.printSchema()
+    ```
+
+    Output
+    ```shell
+      +--------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+      |RequestAddress|SuggestedAddress                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+      +--------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+      | [[何文田邨]]  |   [[[[[何文田政府合署, [九龍城區], [何文田邨], [88, 忠孝街], 九龍], [HO MAN TIN GOVERNMENT OFFICES, [KOWLOON CITY DISTRICT], [HO MAN TIN ESTATE], [88, CHUNG HAU STREET], KLN], 3658519520T20050430, [836597, 22.31468, 114.18007, 819521]]], [75.0]], [[[[何文田政府合署, [九龍城區], [何文田邨], [68, 佛光街], 九龍], [HO MAN TIN GOVERNMENT OFFICES, [KOWLOON CITY DISTRICT], [HO MAN TIN ESTATE], [68, FAT KWONG STREET], KLN], 3658519520T20050430, [836597, 22.31468, 114.18007, 819521]]], [75.0]], [[[[何文田廣場, [九龍城區], [何文田邨], [80, 佛光街], 九龍], [HOMANTIN PLAZA, [KOWLOON CITY DISTRICT], [HO MAN TIN ESTATE], [80, FAT KWONG STREET], KLN], 3677919691P20060311, [836780, 22.31622, 114.18184, 819692]]], [75.0]]]                 |
+      +--------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+      root
+        |-- RequestAddress: struct (nullable = true)
+        |    |-- AddressLine: array (nullable = true)
+        |    |    |-- element: string (containsNull = true)
+        |-- SuggestedAddress: array (nullable = true)
+        |    |-- element: struct (containsNull = true)
+        |    |    |-- Address: struct (nullable = true)
+        |    |    |    |-- PremisesAddress: struct (nullable = true)
+        |    |    |    |    |-- ChiPremisesAddress: struct (nullable = true)
+        |    |    |    |    |    |-- BuildingName: string (nullable = true)
+        |    |    |    |    |    |-- ChiDistrict: struct (nullable = true)
+        |    |    |    |    |    |    |-- DcDistrict: string (nullable = true)
+        |    |    |    |    |    |-- ChiEstate: struct (nullable = true)
+        |    |    |    |    |    |    |-- EstateName: string (nullable = true)
+        |    |    |    |    |    |-- ChiStreet: struct (nullable = true)
+        |    |    |    |    |    |    |-- BuildingNoFrom: string (nullable = true)
+        |    |    |    |    |    |    |-- StreetName: string (nullable = true)
+        |    |    |    |    |    |-- Region: string (nullable = true)
+        |    |    |    |    |-- EngPremisesAddress: struct (nullable = true)
+        |    |    |    |    |    |-- BuildingName: string (nullable = true)
+        |    |    |    |    |    |-- EngDistrict: struct (nullable = true)
+        |    |    |    |    |    |    |-- DcDistrict: string (nullable = true)
+        |    |    |    |    |    |-- EngEstate: struct (nullable = true)
+        |    |    |    |    |    |    |-- EstateName: string (nullable = true)
+        |    |    |    |    |    |-- EngStreet: struct (nullable = true)
+        |    |    |    |    |    |    |-- BuildingNoFrom: string (nullable = true)
+        |    |    |    |    |    |    |-- StreetName: string (nullable = true)
+        |    |    |    |    |    |-- Region: string (nullable = true)
+        |    |    |    |    |-- GeoAddress: string (nullable = true)
+        |    |    |    |    |-- GeospatialInformation: struct (nullable = true)
+        |    |    |    |    |    |-- Easting: string (nullable = true)
+        |    |    |    |    |    |-- Latitude: string (nullable = true)
+        |    |    |    |    |    |-- Longitude: string (nullable = true)
+        |    |    |    |    |    |-- Northing: string (nullable = true)
+        |    |    |-- ValidationInformation: struct (nullable = true)
+        |    |    |    |-- Score: double (nullable = true)
+    ```
+
+3.  Explode Array to Structure
+
+    ```python
+      # Explode Array to Structure
+      explodeArrarDF = readComplexJSONDF.withColumn('Exp_RESULTS', F.explode(F.col('SuggestedAddress'))).drop('SuggestedAddress')
+      explodeArrarDF.printSchema()
+      explodeArrarDF.show()
+
+      # Read location and name
+      dfReadSpecificStructure = explodeArrarDF.select("Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.BuildingName",
+                                                      "Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.ChiDistrict.*",
+                                                      "Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.ChiEstate.*",
+                                                      "Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.ChiStreet.*",
+                                                      "Exp_RESULTS.Address.PremisesAddress.ChiPremisesAddress.Region",
+                                                      "Exp_RESULTS.Address.PremisesAddress.GeospatialInformation.*",
+                                                      "Exp_RESULTS.ValidationInformation.*") 
+      dfReadSpecificStructure.show(truncate=False)
+    ```
+
+    Output
+    ```shell
+      root
+        |-- RequestAddress: struct (nullable = true)
+        |    |-- AddressLine: array (nullable = true)
+        |    |    |-- element: string (containsNull = true)
+        |-- Exp_RESULTS: struct (nullable = true)
+        |    |-- Address: struct (nullable = true)
+        |    |    |-- PremisesAddress: struct (nullable = true)
+        |    |    |    |-- ChiPremisesAddress: struct (nullable = true)
+        |    |    |    |    |-- BuildingName: string (nullable = true)
+        |    |    |    |    |-- ChiDistrict: struct (nullable = true)
+        |    |    |    |    |    |-- DcDistrict: string (nullable = true)
+        |    |    |    |    |-- ChiEstate: struct (nullable = true)
+        |    |    |    |    |    |-- EstateName: string (nullable = true)
+        |    |    |    |    |-- ChiStreet: struct (nullable = true)
+        |    |    |    |    |    |-- BuildingNoFrom: string (nullable = true)
+        |    |    |    |    |    |-- StreetName: string (nullable = true)
+        |    |    |    |    |-- Region: string (nullable = true)
+        |    |    |    |-- EngPremisesAddress: struct (nullable = true)
+        |    |    |    |    |-- BuildingName: string (nullable = true)
+        |    |    |    |    |-- EngDistrict: struct (nullable = true)
+        |    |    |    |    |    |-- DcDistrict: string (nullable = true)
+        |    |    |    |    |-- EngEstate: struct (nullable = true)
+        |    |    |    |    |    |-- EstateName: string (nullable = true)
+        |    |    |    |    |-- EngStreet: struct (nullable = true)
+        |    |    |    |    |    |-- BuildingNoFrom: string (nullable = true)
+        |    |    |    |    |    |-- StreetName: string (nullable = true)
+        |    |    |    |    |-- Region: string (nullable = true)
+        |    |    |    |-- GeoAddress: string (nullable = true)
+        |    |    |    |-- GeospatialInformation: struct (nullable = true)
+        |    |    |    |    |-- Easting: string (nullable = true)
+        |    |    |    |    |-- Latitude: string (nullable = true)
+        |    |    |    |    |-- Longitude: string (nullable = true)
+        |    |    |    |    |-- Northing: string (nullable = true)
+        |    |-- ValidationInformation: struct (nullable = true)
+        |    |    |-- Score: double (nullable = true)
+
+      +--------------+------------------------------+
+      |RequestAddress|                   Exp_RESULTS|
+      +--------------+------------------------------+
+      |  [[何文田邨]] | [[[[何文田政府合署, [九龍城...  |
+      |  [[何文田邨]] | [[[[何文田政府合署, [九龍城...  |
+      |  [[何文田邨]] | [[[[何文田廣場, [九龍城區]...   |
+      +--------------+------------------------------+
+
+      +--------------+----------+----------+--------------+----------+------+-------+--------+---------+--------+-----+
+      |BuildingName  |DcDistrict|EstateName|BuildingNoFrom|StreetName|Region|Easting|Latitude|Longitude|Northing|Score|
+      +--------------+----------+----------+--------------+----------+------+-------+--------+---------+--------+-----+
+      |何文田政府合署   |九龍城區   |何文田邨    |88           |忠孝街     |九龍   |836597 |22.31468|114.18007|819521  |75.0 |
+      |何文田政府合署   |九龍城區   |何文田邨    |68           |佛光街     |九龍   |836597 |22.31468|114.18007|819521  |75.0 |
+      |何文田廣場      |九龍城區   |何文田邨    |80           |佛光街     |九龍   |836780 |22.31622|114.18184|819692  |75.0 |
+      +--------------+----------+----------+--------------+----------+------+-------+--------+---------+--------+-----+
+    ```
+
+## [NOT GOOD] ~~Read `JSON` string to pySpark dataframe~~
+
+### Read `JSON` to spark Dataframe first
 
 **https://sparkbyexamples.com/pyspark/pyspark-maptype-dict-examples/**
 
@@ -614,6 +957,7 @@ Steps,
         .drop("properties") \
         .show()
 
+    # same as above
     df.withColumn("hair", df.properties["hair"]) \
         .withColumn("eye", df.properties["eye"]) \
         .drop("properties") \
@@ -731,6 +1075,10 @@ Output:
 999	1138	23
 1000 rows × 2 columns
 ```
+
+## `groupBy().agg()`
+
+[ xxxx ]
 
 ## `df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables
 
