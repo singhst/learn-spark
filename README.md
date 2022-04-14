@@ -42,6 +42,7 @@
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
   - [`.printSchema()` in df](#printschema-in-df)
+  - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
   - [`.groupBy().count()`](#groupbycount)
   - [`groupBy().agg()`](#groupbyagg)
   - [`df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables](#dfcreateorreplacetempviewsql_table-allows-to-run-sql-queries-once-register-df-as-temporary-tables)
@@ -560,6 +561,8 @@ Note from lecture note: `Suggestion: Avoid using accumulators whenever possible.
 ** Most useful ==> https://zhuanlan.zhihu.com/p/267353998
 
 ## [1] Load `.json`/`.json.gz` files to pySpark dataframe
+
+NEED MODIFY, SOMETHING WRONG
 
 **i.e. whole record is present in single line**
 
@@ -1098,6 +1101,53 @@ root
  |-- COMMENT: string (nullable = true)
  15000
 ```
+
+## `F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`
+
+==> Reference:  https://stackoverflow.com/a/54961415
+
+```python
+df.withColumn('new_timestamp', F.unix_timestamp('timestamp_str_with_custom_format', format=timeFmt))
+```
+
+Example:
+```python
+import pyspark.sql.functions as F
+
+timeFmt = "yyyy-MM-dd't'HH:mm:ss.SSS"
+data = [
+    (1, '2018-07-25t17:15:06.390', '1532538906390'),  # note the '390'
+    (2, '2018-07-25t11:12:48.883', '1532560368883')
+]
+
+df = spark.createDataFrame(data, ['ID', 'timestamp_string', 'timestamp'])
+
+df = df.withColumn('timestamp_string_1', F.unix_timestamp('timestamp_string', format=timeFmt))\
+    .withColumn('timestamp_string_2', (F.col("timestamp_string_1")).cast(TimestampType()))\
+    .withColumn('timestamp_2', (F.col("timestamp") / 1000).cast(TimestampType()))\
+    .select('timestamp', 'timestamp_2', 'timestamp_string', 'timestamp_string_1', 'timestamp_string_2')
+
+df.show(truncate=False)
+df.printSchema()
+```
+
+Output:
+```shell
++-------------+-----------------------+-----------------------+------------------+-------------------+
+|timestamp    |timestamp_2            |timestamp_string       |timestamp_string_1|timestamp_string_2 |
++-------------+-----------------------+-----------------------+------------------+-------------------+
+|1532538906390|2018-07-26 01:15:06.39 |2018-07-25t17:15:06.390|1532510106        |2018-07-25 17:15:06|
+|1532560368883|2018-07-26 07:12:48.883|2018-07-25t11:12:48.883|1532488368        |2018-07-25 11:12:48|
++-------------+-----------------------+-----------------------+------------------+-------------------+
+
+root
+ |-- timestamp: string (nullable = true)
+ |-- timestamp_2: timestamp (nullable = true)
+ |-- timestamp_string: string (nullable = true)
+ |-- timestamp_string_1: long (nullable = true)
+ |-- timestamp_string_2: timestamp (nullable = true)
+```
+
 
 ## `.groupBy().count()`
 
