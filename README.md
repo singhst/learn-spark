@@ -1104,7 +1104,7 @@ root
 
 ## `F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`
 
-==> Reference:  https://stackoverflow.com/a/54961415
+==> Reference:  https://stackoverflow.com/questions/54951348/pyspark-milliseconds-of-timestamp/54961415#54961415
 
 ```python
 df.withColumn('new_timestamp', F.unix_timestamp('timestamp_str_with_custom_format', format=timeFmt))
