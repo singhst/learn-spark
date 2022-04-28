@@ -41,6 +41,7 @@
     - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
+  - [Rename Columns, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#rename-columns-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
   - [`.printSchema()` in df](#printschema-in-df)
   - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
   - [`.groupBy().count()`](#groupbycount)
@@ -1065,6 +1066,24 @@ ORDERKEY,CUSTKEY,ORDERSTATUS,TOTALPRICE,ORDERDATE,ORDERPRIORITY,CLERK,SHIPPRIORI
 dfCustomer = spark.read.csv('customer.csv', header=True, inferSchema=True)
 dfOrders = spark.read.csv('orders.csv', header=True, inferSchema=True)
 ```
+
+
+## Rename Columns, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`
+
+Reference: [PySpark - rename more than one column using withColumnRenamed](https://stackoverflow.com/questions/38798567/pyspark-rename-more-than-one-column-using-withcolumnrenamed)
+
+```python
+def renameColumns(df, mapping):
+    '''df: PySpark DataFrame. Return PySpark DataFrame '''
+
+    if isinstance(mapping, dict):
+        '''mapping.get(old_name, default_name)
+           D.get(k[,d]) -> D[k] if k in D, else d.  d defaults to None.'''
+        return df.select(*[F.col(col_name).alias(mapping.get(col_name, col_name)) for col_name in df.columns])
+    else:
+        raise ValueError("'mapping' should be a dict, like {'old_name_1':'new_name_1', 'old_name_2':'new_name_2'}")
+```
+
 
 ## `.printSchema()` in df
 
