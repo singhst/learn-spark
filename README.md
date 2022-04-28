@@ -1072,6 +1072,7 @@ dfOrders = spark.read.csv('orders.csv', header=True, inferSchema=True)
 
 Reference: [PySpark - rename more than one column using withColumnRenamed](https://stackoverflow.com/questions/38798567/pyspark-rename-more-than-one-column-using-withcolumnrenamed)
 
+Code:
 ```python
 def renameColumns(df, mapping):
     '''df: PySpark DataFrame. Return PySpark DataFrame '''
@@ -1084,6 +1085,17 @@ def renameColumns(df, mapping):
         raise ValueError("'mapping' should be a dict, like {'old_name_1':'new_name_1', 'old_name_2':'new_name_2'}")
 ```
 
+Explain:
+```python
+mapping = {"old": "new"}
+
+print(mapping.get('old', 'default'))
+print(mapping.get('xxx', 'default'))
+
+# ==== output
+# new
+# default
+```
 
 ## `.printSchema()` in df
 
