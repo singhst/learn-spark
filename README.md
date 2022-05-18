@@ -41,6 +41,7 @@
     - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
+  - [[X] Speed Up Reading .csv/.json](#x-speed-up-reading-csvjson)
   - [Rename Columns, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#rename-columns-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
   - [`.printSchema()` in df](#printschema-in-df)
   - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
@@ -1066,6 +1067,14 @@ ORDERKEY,CUSTKEY,ORDERSTATUS,TOTALPRICE,ORDERDATE,ORDERPRIORITY,CLERK,SHIPPRIORI
 dfCustomer = spark.read.csv('customer.csv', header=True, inferSchema=True)
 dfOrders = spark.read.csv('orders.csv', header=True, inferSchema=True)
 ```
+
+## [X] Speed Up Reading .csv/.json
+
+[xxx, Need modify]
+
+[Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
+
+Reading .csv/.json by a pre-defined schema can speed up data import, because Spark doesn't need to scan values in each column/attribute to auto-build the schema based on data.
 
 
 ## Rename Columns, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`
