@@ -41,7 +41,11 @@
     - [Details](#details)
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
-  - [[X] Speed Up Reading .csv/.json](#x-speed-up-reading-csvjson)
+    - [Normal read](#normal-read)
+    - [Read range of file names](#read-range-of-file-names)
+      - [Character range `[a-b]` read](#character-range-a-b-read)
+      - [Alternation `{a,b,c}` read](#alternation-abc-read)
+  - [[ing] Speed Up Reading .csv/.json](#ing-speed-up-reading-csvjson)
   - [Rename Columns, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#rename-columns-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
   - [`.printSchema()` in df](#printschema-in-df)
   - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
@@ -1039,6 +1043,8 @@ Steps,
 
 ## Create sparkdf by reading `.csv`
 
+### Normal read
+
 * http://www.cse.ust.hk/msbd5003/data/customer.csv
 * http://www.cse.ust.hk/msbd5003/data/orders.csv
 
@@ -1068,13 +1074,169 @@ dfCustomer = spark.read.csv('customer.csv', header=True, inferSchema=True)
 dfOrders = spark.read.csv('orders.csv', header=True, inferSchema=True)
 ```
 
-## [X] Speed Up Reading .csv/.json
+### Read range of file names
 
-[xxx, Need modify]
+[Reference](https://docs.microsoft.com/en-us/azure/databricks/kb/scala/pattern-match-files-in-path)
 
-[Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
+Generate example .csv:
+```python
+values = [
+"""Id,RecordNumber,Zipcode,ZipCodeType,State
+{Id},99999,704,STANDARD,PR
+{Id},999999,563,STANDARD,PR
+""",
+"""Id,RecordNumber,Zipcode,ZipCodeType,State
+{Id},99999,704,STANDARD,PR
+{Id},999999,563,STANDARD,PR
+""",
+"""Id,RecordNumber,Zipcode,ZipCodeType,State
+{Id},99999,704,STANDARD,PR
+{Id},999999,563,STANDARD,PR
+""",
+]
+
+for i,value in enumerate(values):
+    for j,value in enumerate(values):
+        with open(f'file_{i}{j}.csv', 'w') as f:
+            f.write(value.format(Id=f'id_{i}{j}'))
+            # f.write('\n')
+```
+
+```shell
+$ ls -l
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_00.csv
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_01.csv
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_02.csv
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_10.csv
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_11.csv
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_12.csv
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_20.csv
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_21.csv
+-rw-r--r--  1 root root        99 Jul  8 03:43 file_22.csv
+```
+
+`file_00.csv`:
+```
+Id,RecordNumber,Zipcode,ZipCodeType,State
+id_00,99999,704,STANDARD,PR
+id_00,999999,563,STANDARD,PR
+```
+
+`file_01.csv`:
+```
+Id,RecordNumber,Zipcode,ZipCodeType,State
+id_01,99999,704,STANDARD,PR
+id_01,999999,563,STANDARD,PR
+```
+
+`file_10.csv`:
+```
+Id,RecordNumber,Zipcode,ZipCodeType,State
+id_10,99999,704,STANDARD,PR
+id_10,999999,563,STANDARD,PR
+```
+
+`file_21.csv`:
+```
+Id,RecordNumber,Zipcode,ZipCodeType,State
+id_21,99999,704,STANDARD,PR
+id_21,999999,563,STANDARD,PR
+```
+
+#### Character range `[a-b]` read
+
+`[a-b]` - The character class matches a single character in the range of values. It is represented by the range of characters you want to match inside a set of brackets.
+
+Reason of `file_1x.csv`,`file2x.csv` are included: 
+
+`1x` and `2x` match `1` and `2` in `[0-2]`
+
+```python
+filename = "file_[0-2]*.csv"
+print(filename)
+
+dfFromTxt = (spark
+             .read.option("header",True)
+             .csv(filename) #load csv
+)
+
+dfFromTxt.printSchema()
+dfFromTxt.show(truncate=False)
+```
+
+```shell
+file_[0-2]*.csv
+root
+ |-- Id: string (nullable = true)
+ |-- RecordNumber: string (nullable = true)
+ |-- Zipcode: string (nullable = true)
+ |-- ZipCodeType: string (nullable = true)
+ |-- State: string (nullable = true)
+
++-----+------------+-------+-----------+-----+
+|Id   |RecordNumber|Zipcode|ZipCodeType|State|
++-----+------------+-------+-----------+-----+
+|id_00|99999       |704    |STANDARD   |PR   |
+|id_00|999999      |563    |STANDARD   |PR   |
+|id_01|99999       |704    |STANDARD   |PR   |
+|id_01|999999      |563    |STANDARD   |PR   |
+|id_02|99999       |704    |STANDARD   |PR   |
+|id_02|999999      |563    |STANDARD   |PR   |
+|id_10|99999       |704    |STANDARD   |PR   |
+|id_10|999999      |563    |STANDARD   |PR   |
+|id_11|99999       |704    |STANDARD   |PR   |
+|id_11|999999      |563    |STANDARD   |PR   |
+|id_12|99999       |704    |STANDARD   |PR   |
+|id_12|999999      |563    |STANDARD   |PR   |
+|id_20|99999       |704    |STANDARD   |PR   |
+|id_20|999999      |563    |STANDARD   |PR   |
+|id_21|99999       |704    |STANDARD   |PR   |
+|id_21|999999      |563    |STANDARD   |PR   |
+|id_22|99999       |704    |STANDARD   |PR   |
+|id_22|999999      |563    |STANDARD   |PR   |
++-----+------------+-------+-----------+-----+
+```
+
+#### Alternation `{a,b,c}` read
+
+```python 
+filename = "file_{00,10}*.csv"
+print(filename)
+
+dfFromTxt = (spark
+             .read.option("header",True)
+             .csv(filename) #load csv
+)
+
+dfFromTxt.printSchema()
+dfFromTxt.show(truncate=False)
+```
+
+```shell
+file_{00,10}*.csv
+root
+ |-- Id: string (nullable = true)
+ |-- RecordNumber: string (nullable = true)
+ |-- Zipcode: string (nullable = true)
+ |-- ZipCodeType: string (nullable = true)
+ |-- State: string (nullable = true)
+
++-----+------------+-------+-----------+-----+
+|Id   |RecordNumber|Zipcode|ZipCodeType|State|
++-----+------------+-------+-----------+-----+
+|id_00|99999       |704    |STANDARD   |PR   |
+|id_00|999999      |563    |STANDARD   |PR   |
+|id_10|99999       |704    |STANDARD   |PR   |
+|id_10|999999      |563    |STANDARD   |PR   |
++-----+------------+-------+-----------+-----+
+```
+
+
+## [ing] Speed Up Reading .csv/.json
 
 Reading .csv/.json by a pre-defined schema can speed up data import, because Spark doesn't need to scan values in each column/attribute to auto-build the schema based on data.
+
+[Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
 
 
 ## Rename Columns, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`
@@ -1217,6 +1379,9 @@ Output:
 ## `groupBy().agg()`
 
 [ xxxx ]
+
+1. https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.sql.GroupedData.agg.html
+2. https://spark.apache.org/docs/2.4.4/sql-pyspark-pandas-with-arrow.html#grouped-map
 
 ## `df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables
 
