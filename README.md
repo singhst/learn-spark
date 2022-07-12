@@ -46,7 +46,9 @@
       - [Character range `[a-b]` read](#character-range-a-b-read)
       - [Alternation `{a,b,c}` read](#alternation-abc-read)
   - [[ing] Speed Up Reading .csv/.json](#ing-speed-up-reading-csvjson)
-  - [Rename Columns, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#rename-columns-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
+  - [Rename Columns,](#rename-columns)
+    - [(1) Built-in `withColumnRenamed()`](#1-built-in-withcolumnrenamed)
+    - [(2) `SELECT` method, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#2-select-method-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
   - [`.printSchema()` in df](#printschema-in-df)
   - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
   - [`.groupBy().count()`](#groupbycount)
@@ -1239,7 +1241,16 @@ Reading .csv/.json by a pre-defined schema can speed up data import, because Spa
 [Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
 
 
-## Rename Columns, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`
+## Rename Columns, 
+### (1) Built-in `withColumnRenamed()`
+
+[Ref](https://sparkbyexamples.com/pyspark/pyspark-rename-dataframe-column/)
+
+```python
+df2 = df.withColumnRenamed(existingName, newNam)
+```
+
+### (2) `SELECT` method, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`
 
 Reference: [PySpark - rename more than one column using withColumnRenamed](https://stackoverflow.com/questions/38798567/pyspark-rename-more-than-one-column-using-withcolumnrenamed)
 
