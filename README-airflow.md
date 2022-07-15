@@ -22,3 +22,11 @@ http://edwardinaction.blogspot.com/2019/12/airflow-docker.html
 ```shell
 docker run -d -p 8080:8080 -v /path/to/dags/on/your/local/machine/:/usr/local/airflow/dags  puckel/docker-airflow webserver
 ```
+
+# Note - Development
+
+## Prevent consecutive `list` tasks in a DAG
+
+solution: use a dummy task in between `list of tasks`
+
+`DummyOperator()`
