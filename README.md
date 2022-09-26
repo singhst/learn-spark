@@ -22,6 +22,7 @@
     - [`.reduce()`](#reduce)
   - [Spark recomputes transformations](#spark-recomputes-transformations)
     - [`.cache()`/`.persist()`](#cachepersist)
+    - [Issue of `df.cache()` with two same reference variables](#issue-of-dfcache-with-two-same-reference-variables)
   - [RDD - Closure](#rdd---closure)
     - [Closure example](#closure-example)
       - [Incorrect way - `global` variable as counter](#incorrect-way---global-variable-as-counter)
@@ -447,6 +448,12 @@ C = B.filter(lambda x: x*x < t) # C needs B again, memory stores B, NO need to r
 print('C.collect()=', C.collect())  # C.collect()= [1, 2, 3, 4, 5, 6, 7, 8, 9]
 print('C.count()=', C.count())      # C.count()= 9
 ```
+
+### Issue of `df.cache()` with two same reference variables
+
+https://stackoverflow.com/questions/60255595/if-i-cache-a-spark-dataframe-and-then-overwrite-the-reference-will-the-original
+
+xxx
 
 
 ## RDD - Closure
