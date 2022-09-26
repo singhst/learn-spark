@@ -52,8 +52,10 @@
     - [(2) `SELECT` method, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#2-select-method-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
   - [`.printSchema()` in df](#printschema-in-df)
   - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
+  - [`F.create_map()` in `df.withColumn()`, create a `dict` column](#fcreate_map-in-dfwithcolumn-create-a-dict-column)
   - [`.groupBy().count()`](#groupbycount)
   - [`groupBy().agg()`](#groupbyagg)
+  - [`groupBy().collect_set()`](#groupbycollect_set)
   - [`df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables](#dfcreateorreplacetempviewsql_table-allows-to-run-sql-queries-once-register-df-as-temporary-tables)
   - [`.join()`/`spark.sql()` dataframes](#joinsparksql-dataframes)
     - [`.join()`](#join)
@@ -1368,6 +1370,79 @@ root
  |-- timestamp_string_2: timestamp (nullable = true)
 ```
 
+## `F.create_map()` in `df.withColumn()`, create a `dict` column
+
+https://sparkbyexamples.com/pyspark/pyspark-convert-dataframe-columns-to-maptype-dict/
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType,StructField, StringType, IntegerType
+
+spark = SparkSession.builder.appName('SparkByExamples.com').getOrCreate()
+data = [ ("36636","Finance",3000,"USA"), 
+    ("40288","Finance",5000,"IND"), 
+    ("42114","Sales",3900,"USA"), 
+    ("39192","Marketing",2500,"CAN"), 
+    ("34534","Sales",6500,"USA") ]
+schema = StructType([
+     StructField('id', StringType(), True),
+     StructField('dept', StringType(), True),
+     StructField('salary', IntegerType(), True),
+     StructField('location', StringType(), True)
+     ])
+
+df = spark.createDataFrame(data=data,schema=schema)
+df.printSchema()
+df.show(truncate=False)
+```
+
+```shell
+root
+ |-- id: string (nullable = true)
+ |-- dept: string (nullable = true)
+ |-- salary: integer (nullable = true)
+ |-- location: string (nullable = true)
+
++-----+---------+------+--------+
+|id   |dept     |salary|location|
++-----+---------+------+--------+
+|36636|Finance  |3000  |USA     |
+|40288|Finance  |5000  |IND     |
+|42114|Sales    |3900  |USA     |
+|39192|Marketing|2500  |CAN     |
+|34534|Sales    |6500  |USA     |
++-----+---------+------+--------+
+```
+
+```python
+#Convert columns to Map
+from pyspark.sql.functions import col,lit,create_map
+df = df.withColumn("propertiesMap",create_map(
+        lit("salary"),col("salary"),
+        lit("location"),col("location")
+        )).drop("salary","location")
+df.printSchema()
+df.show(truncate=False)
+```
+
+```shell 
+root
+ |-- id: string (nullable = true)
+ |-- dept: string (nullable = true)
+ |-- propertiesMap: map (nullable = false)
+ |    |-- key: string
+ |    |-- value: string (valueContainsNull = true)
+
++-----+---------+-----------------------------------+
+|id   |dept     |propertiesMap                      |
++-----+---------+-----------------------------------+
+|36636|Finance  |{'salary': 3000, 'location': 'USA'}|
+|40288|Finance  |{'salary': 5000, 'location': 'IND'}|
+|42114|Sales    |{'salary': 3900, 'location': 'USA'}|
+|39192|Marketing|{'salary': 2500, 'location': 'CAN'}|
+|34534|Sales    |{'salary': 6500, 'location': 'USA'}|
++-----+---------+-----------------------------------+
+```
 
 ## `.groupBy().count()`
 
@@ -1400,6 +1475,9 @@ Output:
 
 1. https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.sql.GroupedData.agg.html
 2. https://spark.apache.org/docs/2.4.4/sql-pyspark-pandas-with-arrow.html#grouped-map
+
+## `groupBy().collect_set()`
+
 
 ## `df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables
 
