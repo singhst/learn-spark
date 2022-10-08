@@ -575,7 +575,11 @@ Note from lecture note: `Suggestion: Avoid using accumulators whenever possible.
 
 # Deal with `JSON` data
 
+** There are different formats in `JSON`: single-line, multi-line
+
 ** Most useful ==> https://zhuanlan.zhihu.com/p/267353998
+
+Another reference: https://sparkbyexamples.com/pyspark/pyspark-read-json-file-into-dataframe/
 
 ## [1] Load `.json`/`.json.gz` files to pySpark dataframe
 
