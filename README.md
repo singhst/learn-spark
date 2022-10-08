@@ -46,7 +46,7 @@
     - [Read range of file names](#read-range-of-file-names)
       - [Character range `[a-b]` read](#character-range-a-b-read)
       - [Alternation `{a,b,c}` read](#alternation-abc-read)
-  - [[ing] Speed Up Reading .csv/.json](#ing-speed-up-reading-csvjson)
+  - [[ing] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
   - [Rename Columns,](#rename-columns)
     - [(1) Built-in `withColumnRenamed()`](#1-built-in-withcolumnrenamed)
     - [(2) `SELECT` method, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#2-select-method-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
@@ -1243,11 +1243,12 @@ root
 ```
 
 
-## [ing] Speed Up Reading .csv/.json
+## [ing] Speed Up Reading .csv/.json with schema
 
 Reading .csv/.json by a pre-defined schema can speed up data import, because Spark doesn't need to scan values in each column/attribute to auto-build the schema based on data.
 
-[Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
+* [Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
+* [Spark read JSON with or without schema](https://sparkbyexamples.com/spark/spark-read-json-with-schema/)
 
 
 ## Rename Columns, 
