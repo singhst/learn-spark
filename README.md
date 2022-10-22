@@ -23,6 +23,7 @@
   - [Spark recomputes transformations](#spark-recomputes-transformations)
     - [`.cache()`/`.persist()`](#cachepersist)
     - [Issue of `df.cache()` with two same reference variables](#issue-of-dfcache-with-two-same-reference-variables)
+    - [Best practice - `.cache()`/`.persist()`](#best-practice---cachepersist)
   - [RDD - Closure](#rdd---closure)
     - [Closure example](#closure-example)
       - [Incorrect way - `global` variable as counter](#incorrect-way---global-variable-as-counter)
@@ -40,6 +41,8 @@
   - [[NOT GOOD] ~~Read `JSON` string to pySpark dataframe~~](#not-good-read-json-string-to-pyspark-dataframe)
     - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
     - [Details](#details)
+- [Deal with `.parquet`](#deal-with-parquet)
+  - [What is `.parquet`?](#what-is-parquet)
 - [Spark Dataframe](#spark-dataframe)
   - [Create sparkdf by reading `.csv`](#create-sparkdf-by-reading-csv)
     - [Normal read](#normal-read)
@@ -55,7 +58,7 @@
   - [`F.create_map()` in `df.withColumn()`, create a `dict` column](#fcreate_map-in-dfwithcolumn-create-a-dict-column)
   - [`.groupBy().count()`](#groupbycount)
   - [`groupBy().agg()`](#groupbyagg)
-  - [`groupBy().collect_set()`](#groupbycollect_set)
+  - [`groupBy().collect_set()` / `groupBy().collect_list()`](#groupbycollect_set--groupbycollect_list)
   - [`df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables](#dfcreateorreplacetempviewsql_table-allows-to-run-sql-queries-once-register-df-as-temporary-tables)
   - [`.join()`/`spark.sql()` dataframes](#joinsparksql-dataframes)
     - [`.join()`](#join)
@@ -73,6 +76,8 @@
     - [Start it locally](#start-it-locally)
     - [Start in Google Colab](#start-in-google-colab)
     - [Use MongoDB in Spark](#use-mongodb-in-spark)
+      - [Method 1 - Setting in Code / Notebook](#method-1---setting-in-code--notebook)
+      - [Method 2 - Setting in Terminal](#method-2---setting-in-terminal)
   - [Test Spark in Jupyter Notebook](#test-spark-in-jupyter-notebook)
 - [Reference](#reference)
 
@@ -456,6 +461,13 @@ print('C.count()=', C.count())      # C.count()= 9
 https://stackoverflow.com/questions/60255595/if-i-cache-a-spark-dataframe-and-then-overwrite-the-reference-will-the-original
 
 xxx
+
+### Best practice - `.cache()`/`.persist()`
+
+reference ==> https://towardsdatascience.com/best-practices-for-caching-in-spark-sql-b22fb0f02d34
+
+1. When you cache a DataFrame create a new variable for it `cachedDF = df.cache()`. This will allow you to bypass the problems that we were solving in our example, that sometimes it is not clear what is the analyzed plan and what was actually cached. Here whenever you call `cachedDF.select(...)` it will leverage the cached data.
+2. Unpersist the DataFrame after it is no longer needed using `cachedDF.unpersist()`. If the caching layer becomes full, Spark will start evicting the data from memory using the LRU (least recently used) strategy. So it is good practice to use unpersist to stay more in control about what should be evicted. Also, the more space you have in memory the more can Spark use for execution, for instance, for building hash maps and so on.
 
 
 ## RDD - Closure
@@ -1054,6 +1066,16 @@ Steps,
     +----------+-----+-----+
     ```
 
+# Deal with `.parquet`
+
+[ xxx ]
+
+* https://sparkbyexamples.com/pyspark/pyspark-read-and-write-parquet-file/
+
+## What is `.parquet`?
+
+==> columnar data format. Convenient for data analysis, because program just reads a whole column data instead of scanning all rows.
+
 # Spark Dataframe
 
 ## Create sparkdf by reading `.csv`
@@ -1481,8 +1503,11 @@ Output:
 1. https://spark.apache.org/docs/latest/api/python/reference/api/pyspark.sql.GroupedData.agg.html
 2. https://spark.apache.org/docs/2.4.4/sql-pyspark-pandas-with-arrow.html#grouped-map
 
-## `groupBy().collect_set()`
+## `groupBy().collect_set()` / `groupBy().collect_list()`
 
+[ xxx ]
+
+1. https://sparkbyexamples.com/spark/spark-collect-list-and-collect-set-functions/
 
 ## `df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables
 
@@ -1775,6 +1800,25 @@ Run the following in macOS terminal,
 https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe
 
 ### Use MongoDB in Spark
+
+#### Method 1 - Setting in Code / Notebook
+
+Set MongoDB connection when create Spark session in Python code.
+
+```python
+URL = "mongodb://{USER_NAME}:{PASSWORD}@127.0.0.1:{PORT}/test.application_test?readPreference=primaryPreferred?authMechanism={SCRAM-SHA-1}"
+spark = (
+  SparkSession.builder.master("local[*]")
+            .appName("TASK_NAME")
+            .config("spark.mongodb.input.uri", URI)
+            .config("spark.mongodb.output.uri", URI)
+            .config("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:3.0.1")
+            .config("spark.jars.packages", "org.mongodb:mongo-java-driver:x.x.x")
+            .getOrCreate()
+            )
+```
+
+#### Method 2 - Setting in Terminal
 
 Terminal:
 
