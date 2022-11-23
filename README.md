@@ -32,13 +32,13 @@
       - [Note](#note)
     - [Accumulator](#accumulator)
 - [Deal with `JSON` data](#deal-with-json-data)
-  - [[1] Load `.json`/`.json.gz` files to pySpark dataframe](#1-load-jsonjsongz-files-to-pyspark-dataframe)
-  - [[2] Load JSON from String / `.txt` files to pySpark dataframe](#2-load-json-from-string--txt-files-to-pyspark-dataframe)
+  - [\[1\] Load `.json`/`.json.gz` files to pySpark dataframe](#1-load-jsonjsongz-files-to-pyspark-dataframe)
+  - [\[2\] Load JSON from String / `.txt` files to pySpark dataframe](#2-load-json-from-string--txt-files-to-pyspark-dataframe)
     - [Read json from text files](#read-json-from-text-files)
-    - [[a] WITHOUT schema definition](#a-without-schema-definition)
-    - [[b] WITH schema definition](#b-with-schema-definition)
+    - [\[a\] WITHOUT schema definition](#a-without-schema-definition)
+    - [\[b\] WITH schema definition](#b-with-schema-definition)
   - [Parse JSON from RESTful API](#parse-json-from-restful-api)
-  - [[NOT GOOD] ~~Read `JSON` string to pySpark dataframe~~](#not-good-read-json-string-to-pyspark-dataframe)
+  - [\[NOT GOOD\] ~~Read `JSON` string to pySpark dataframe~~](#not-good-read-json-string-to-pyspark-dataframe)
     - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
     - [Details](#details)
 - [Deal with `.parquet`](#deal-with-parquet)
@@ -49,10 +49,12 @@
     - [Read range of file names](#read-range-of-file-names)
       - [Character range `[a-b]` read](#character-range-a-b-read)
       - [Alternation `{a,b,c}` read](#alternation-abc-read)
-  - [[ing] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
+  - [\[ing\] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
   - [Rename Columns,](#rename-columns)
     - [(1) Built-in `withColumnRenamed()`](#1-built-in-withcolumnrenamed)
     - [(2) `SELECT` method, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#2-select-method-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
+    - [Lowercase all column names](#lowercase-all-column-names)
+    - [Lowercase values in all columns](#lowercase-values-in-all-columns)
   - [`.printSchema()` in df](#printschema-in-df)
   - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
   - [`F.create_map()` in `df.withColumn()`, create a `dict` column](#fcreate_map-in-dfwithcolumn-create-a-dict-column)
@@ -1314,6 +1316,31 @@ print(mapping.get('xxx', 'default'))
 # new
 # default
 ```
+
+### Lowercase all column names
+
+[reference](https://stackoverflow.com/questions/43005744/convert-columns-of-pyspark-data-frame-to-lowercase/43005939#43005939)
+
+```python
+import pyspark.sql.functions as F
+
+df = xxxx
+# lowercase all column names
+df = df.toDF(*[c.lower() for c in df.columns])
+```
+
+### Lowercase values in all columns
+
+[reference](performing-operations-on-multiple-columns-in-a-pyspark-dataframe-36e97896c378)
+
+```python
+import pyspark.sql.functions as F
+
+df = xxxx
+df = df.select(*[F.lower(F.col(col)).name(col) for col in df.columns])
+
+```
+
 
 ## `.printSchema()` in df
 
