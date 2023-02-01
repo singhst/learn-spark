@@ -37,6 +37,8 @@
     - [Read json from text files](#read-json-from-text-files)
     - [\[a\] WITHOUT schema definition](#a-without-schema-definition)
     - [\[b\] WITH schema definition](#b-with-schema-definition)
+      - [\[b1\] Create schema manually](#b1-create-schema-manually)
+      - [\[b2\] Create schema from JSON](#b2-create-schema-from-json)
   - [Parse JSON from RESTful API](#parse-json-from-restful-api)
   - [\[NOT GOOD\] ~~Read `JSON` string to pySpark dataframe~~](#not-good-read-json-string-to-pyspark-dataframe)
     - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
@@ -61,7 +63,9 @@
   - [`.groupBy().count()`](#groupbycount)
   - [`groupBy().agg()`](#groupbyagg)
   - [`groupBy().collect_set()` / `groupBy().collect_list()`](#groupbycollect_set--groupbycollect_list)
+  - [Combine array of map to single map, `groupBy().collect_list()`](#combine-array-of-map-to-single-map-groupbycollect_list)
   - [`df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables](#dfcreateorreplacetempviewsql_table-allows-to-run-sql-queries-once-register-df-as-temporary-tables)
+  - [Window functions](#window-functions)
   - [`.join()`/`spark.sql()` dataframes](#joinsparksql-dataframes)
     - [`.join()`](#join)
     - [`spark.sql()` + `df.createOrReplaceTempView("sql_table")`](#sparksql--dfcreateorreplacetempviewsql_table)
@@ -725,6 +729,7 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
 
 ### [b] WITH schema definition
 
+#### [b1] Create schema manually
 1.  Define schema
 
     ```python
@@ -772,6 +777,92 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
     |704    |STANDARD       |PASEO COSTA DEL SUR|PR   |
     +-------+---------------+-------------------+-----+
     ```
+
+#### [b2] Create schema from JSON
+==> https://sparkbyexamples.com/pyspark/pyspark-structtype-and-structfield/
+
+  <details>
+      <summary>Schema in JSON</summary>
+
+```python
+  schema_json: dict = {
+    "type" : "struct",
+    "fields" : [ {
+      "name" : "name",
+      "type" : {
+        "type" : "struct",
+        "fields" : [ {
+          "name" : "firstname",
+          "type" : "string",
+          "nullable" : true,
+          "metadata" : { }
+        }, {
+          "name" : "middlename",
+          "type" : "string",
+          "nullable" : true,
+          "metadata" : { }
+        }, {
+          "name" : "lastname",
+          "type" : "string",
+          "nullable" : true,
+          "metadata" : { }
+        } ]
+      },
+      "nullable" : true,
+      "metadata" : { }
+    }, {
+      "name" : "dob",
+      "type" : "string",
+      "nullable" : true,
+      "metadata" : { }
+    }, {
+      "name" : "gender",
+      "type" : "string",
+      "nullable" : true,
+      "metadata" : { }
+    }, {
+      "name" : "salary",
+      "type" : "integer",
+      "nullable" : true,
+      "metadata" : { }
+    } ]
+  }
+```
+  </details>
+
+  Create schema from JSON:
+  ```python
+  import json
+
+  # schemaFromJson = StructType.fromJson(json.loads(df2.schema.json()))
+  schemaFromJson = StructType.fromJson(schema_json)
+  df3 = spark.createDataFrame(
+          spark.sparkContext.parallelize(structureData),schemaFromJson)
+  df3.printSchema()
+  df3.show(truncate=False)
+  ```
+
+  Result:
+  ```shell
+  root
+  |-- name: struct (nullable = true)
+  |    |-- firstname: string (nullable = true)
+  |    |-- middlename: string (nullable = true)
+  |    |-- lastname: string (nullable = true)
+  |-- id: string (nullable = true)
+  |-- gender: string (nullable = true)
+  |-- salary: integer (nullable = true)
+
+  +--------------------+-----+------+------+
+  |name                |id   |gender|salary|
+  +--------------------+-----+------+------+
+  |[James, , Smith]    |36636|M     |3100  |
+  |[Michael, Rose, ]   |40288|M     |4300  |
+  |[Robert, , Williams]|42114|M     |1400  |
+  |[Maria, Anne, Jones]|39192|F     |5500  |
+  |[Jen, Mary, Brown]  |     |F     |-1    |
+  +--------------------+-----+------+------+
+  ```
 
 ## Parse JSON from RESTful API
 
@@ -1536,6 +1627,23 @@ Output:
 
 1. https://sparkbyexamples.com/spark/spark-collect-list-and-collect-set-functions/
 
+## Combine array of map to single map, `groupBy().collect_list()`
+
+[reference](https://stackoverflow.com/questions/43723864/combine-array-of-maps-into-single-map-in-pyspark-dataframe/43724338#43724338)
+
+```python
+from pyspark.sql.functions import udf,collect_list
+from pyspark.sql.types import MapType,StringType
+
+combineMap = udf(lambda maps: {key:f[key] for f in maps for key in f},
+                 MapType(StringType(),StringType()))
+
+df.groupBy('id')\
+    .agg(collect_list('map')\
+    .alias('maps'))\
+    .select('id', combineMap('maps').alias('combined_map')).show()
+```
+
 ## `df.createOrReplaceTempView("sql_table")`, allows to run SQL queries once register `df` as temporary tables
 
 ```python
@@ -1562,6 +1670,11 @@ Output:
 1499	1500	NaN
 1500 rows × 2 columns
 ```
+
+## Window functions
+
+https://sparkbyexamples.com/pyspark/pyspark-window-functions/
+
 
 ## `.join()`/`spark.sql()` dataframes
 ### `.join()`
