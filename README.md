@@ -52,6 +52,8 @@
       - [Character range `[a-b]` read](#character-range-a-b-read)
       - [Alternation `{a,b,c}` read](#alternation-abc-read)
   - [\[ing\] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
+  - [Merge Two DataFrames with Different Columns or Schema](#merge-two-dataframes-with-different-columns-or-schema)
+    - [Steps](#steps)
   - [Rename Columns,](#rename-columns)
     - [(1) Built-in `withColumnRenamed()`](#1-built-in-withcolumnrenamed)
     - [(2) `SELECT` method, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#2-select-method-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
@@ -1369,6 +1371,14 @@ Reading .csv/.json by a pre-defined schema can speed up data import, because Spa
 * [Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
 * [Spark read JSON with or without schema](https://sparkbyexamples.com/spark/spark-read-json-with-schema/)
 
+
+## Merge Two DataFrames with Different Columns or Schema
+
+[reference](https://www.geeksforgeeks.org/pyspark-merge-two-dataframes-with-different-columns-or-schema/)
+
+### Steps
+1. Create the missing columns for both dataframes and filled them will NULL
+2. UNION two dataframes
 
 ## Rename Columns, 
 ### (1) Built-in `withColumnRenamed()`
