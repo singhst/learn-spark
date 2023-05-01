@@ -60,7 +60,9 @@
     - [Lowercase all column names](#lowercase-all-column-names)
     - [Lowercase values in all columns](#lowercase-values-in-all-columns)
   - [`.printSchema()` in df](#printschema-in-df)
-  - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
+  - [Deal with `datetime` / `timestamp`](#deal-with-datetime--timestamp)
+    - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
+    - [Get day of week from `datetime` / `timestamp`](#get-day-of-week-from-datetime--timestamp)
   - [`F.create_map()` in `df.withColumn()`, create a `dict` column](#fcreate_map-in-dfwithcolumn-create-a-dict-column)
   - [`.groupBy().count()`](#groupbycount)
   - [`groupBy().agg()`](#groupbyagg)
@@ -1479,7 +1481,8 @@ root
  15000
 ```
 
-## `F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`
+## Deal with `datetime` / `timestamp`
+### `F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`
 
 ==> Reference:  https://stackoverflow.com/questions/54951348/pyspark-milliseconds-of-timestamp/54961415#54961415
 
@@ -1523,6 +1526,43 @@ root
  |-- timestamp_string: string (nullable = true)
  |-- timestamp_string_1: long (nullable = true)
  |-- timestamp_string_2: timestamp (nullable = true)
+```
+
+### Get day of week from `datetime` / `timestamp`
+https://stackoverflow.com/questions/38928919/how-to-get-the-weekday-from-day-of-month-using-pyspark/68018862#68018862
+
+Code:
+```python
+import pyspark.sql.functions as F
+df = df.withColumn('day_of_week', ((F.dayofweek("yyyymmddhh start")+5)%7)+1)
+df = df.withColumn('is_weekday', ((F.dayofweek("yyyymmddhh start")+5)%7)+1 < 6)
+```
+
+Result:
+```python
+df.printSchema()
+df.select("journey id", "yyyymmddhh start", "day_of_week", "is_weekday").show()
+```
+
+```shell
+root
+ |-- journey id: string (nullable = true)
+ |-- yyyymmddhh start: timestamp (nullable = true)
+ |-- yyyymmddhh end: timestamp (nullable = true)
+ |-- day_of_week: integer (nullable = true)
+ |-- is_weekday: boolean (nullable = true)
+
++----------+-------------------+-----------+----------+
+|journey id|   yyyymmddhh start|day_of_week|is_weekday|
++----------+-------------------+-----------+----------+
+|       953|2017-09-19 17:26:00|          2|      true|
+|     14659|2017-09-13 19:13:00|          3|      true|
+|      2351|2017-09-14 14:31:00|          4|      true|
+|      7252|2017-09-17 17:00:00|          7|     false|
+|      9782|2017-09-17 17:00:00|          7|     false|
+|     13500|2017-09-15 13:33:00|          5|      true|
+|     11205|2017-09-15 15:47:00|          5|      true|
++----------+-------------------+-----------+----------+
 ```
 
 ## `F.create_map()` in `df.withColumn()`, create a `dict` column
