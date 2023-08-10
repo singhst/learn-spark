@@ -75,6 +75,7 @@
     - [`spark.sql()` + `df.createOrReplaceTempView("sql_table")`](#sparksql--dfcreateorreplacetempviewsql_table)
   - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
   - [UDF `df.withColumn`, user defined function](#udf-dfwithcolumn-user-defined-function)
+  - [`melt()` - Wide to long](#melt---wide-to-long)
 - [Graph, edge, vertice, Graphframe](#graph-edge-vertice-graphframe)
   - [`GraphFrame(v, e)`, Create GraphFrame](#graphframev-e-create-graphframe)
   - [Explore `GraphFrame`](#explore-graphframe)
@@ -1780,7 +1781,7 @@ df_concat = df_1.union(df_2)
 
 [Reference](https://sparkbyexamples.com/pyspark/pyspark-udf-user-defined-function/)
 
-## Wide to long - `melt()`
+## `melt()` - Wide to long
 * https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
 * https://gist.github.com/korkridake/972e315e5ce094096e17c6ad1ef599fd
 
