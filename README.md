@@ -1780,6 +1780,66 @@ df_concat = df_1.union(df_2)
 
 [Reference](https://sparkbyexamples.com/pyspark/pyspark-udf-user-defined-function/)
 
+## Wide to long - `melt()`
+* https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
+* https://gist.github.com/korkridake/972e315e5ce094096e17c6ad1ef599fd
+
+Code example:
+```python
+from pyspark.sql.functions import array, col, explode, lit, struct
+from pyspark.sql import DataFrame
+from typing import Iterable 
+
+def melt(
+        df: DataFrame, 
+        id_vars: Iterable[str], value_vars: Iterable[str], 
+        var_name: str="variable", value_name: str="value") -> DataFrame:
+    """
+    Convert :class:`DataFrame` from wide to long format.
+    Source: https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
+    """
+
+    # -------------------------------------------------------------------------------
+    # Create array<struct<variable: str, value: ...>>
+    # -------------------------------------------------------------------------------
+    _vars_and_vals = array(*(
+        struct(lit(c).alias(var_name), col(c).alias(value_name)) 
+        for c in value_vars))
+
+    # -------------------------------------------------------------------------------
+    # Add to the DataFrame and explode
+    # -------------------------------------------------------------------------------
+    _tmp = df.withColumn("_vars_and_vals", explode(_vars_and_vals))
+
+    cols = id_vars + [
+            col("_vars_and_vals")[x].alias(x) for x in [var_name, value_name]]
+    return _tmp.select(*cols)
+    
+# -------------------------------------------------------------------------------
+# Let's Implement Wide to Long in Pyspark!
+# -------------------------------------------------------------------------------
+melt(df_web_browsing_full_test, 
+     id_vars=['ID_variable'], 
+     value_vars=['VALUE_variable_1', 'VALUE_variable_2']
+     var_name='variable',
+     value_name='value',
+     ).show()
+```
+
+Result:
+```
++-----------+--------+----------------+
+|ID_variable|variable|           value|
++-----------+--------+----------------+
+| id00000001| 2023-01|             0.0|
+| id03947263| 2023-02|       488.49382|
+| id58723942| 2023-03|      8644.84643|
+| id09474733| 2023-04|      1431.49900|
+| id00012398| 2023-05|             0.0|
++-----------+--------+----------------+
+```
+
+
 # Graph, edge, vertice, Graphframe
 
 Credit to [link](https://github.com/cenzwong/tech/tree/master/Note/Spark#graphframe)
