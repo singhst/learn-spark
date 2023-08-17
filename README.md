@@ -1528,6 +1528,13 @@ root
  |-- timestamp_string_1: long (nullable = true)
  |-- timestamp_string_2: timestamp (nullable = true)
 ```
+### Change time zone
+
+```
+df = df.withColumn("existing_datetime_hk_timezone", F.from_utc_timestamp("existing_datetime", "Asia/Hong_Kong"))
+
+df = df.withColumn("hk_timezone", F.from_utc_timestamp(F.current_timestamp(),"Asia/Hong_Kong"))
+```
 
 ### Get day of week from `datetime` / `timestamp`
 https://stackoverflow.com/questions/38928919/how-to-get-the-weekday-from-day-of-month-using-pyspark/68018862#68018862
