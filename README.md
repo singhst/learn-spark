@@ -62,6 +62,7 @@
   - [`.printSchema()` in df](#printschema-in-df)
   - [Deal with `datetime` / `timestamp`](#deal-with-datetime--timestamp)
     - [`F.unix_timestamp()`, convert timestamp `string` with custom format to `datetime object`](#funix_timestamp-convert-timestamp-string-with-custom-format-to-datetime-object)
+    - [Change time zone](#change-time-zone)
     - [Get day of week from `datetime` / `timestamp`](#get-day-of-week-from-datetime--timestamp)
   - [`F.create_map()` in `df.withColumn()`, create a `dict` column](#fcreate_map-in-dfwithcolumn-create-a-dict-column)
   - [`.groupBy().count()`](#groupbycount)
@@ -1530,10 +1531,23 @@ root
 ```
 ### Change time zone
 
-```
-df = df.withColumn("existing_datetime_hk_timezone", F.from_utc_timestamp("existing_datetime", "Asia/Hong_Kong"))
+Example:
+```python
+import pyspark.sql.functions as F
 
+timeFmt = "yyyy-MM-dd't'HH:mm:ss.SSS"
+data = [
+    (1, '2018-07-25t17:15:06.390', '1532538906390'),  # note the '390'
+    (2, '2018-07-25t11:12:48.883', '1532560368883')
+]
+
+df = spark.createDataFrame(data, ['ID', 'timestamp_string', 'timestamp'])
+
+### change datetime from current timestamp
 df = df.withColumn("hk_timezone", F.from_utc_timestamp(F.current_timestamp(),"Asia/Hong_Kong"))
+
+### method 2
+df = df.withColumn("existing_datetime_hk_timezone", F.from_utc_timestamp("existing_datetime", "Asia/Hong_Kong"))
 ```
 
 ### Get day of week from `datetime` / `timestamp`
