@@ -736,7 +736,7 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
 ### [b] WITH schema definition
 
 #### [b1] Create schema manually
-1.  Define schema
+1.  Define schema by Pyspark type
 
     ```python
     # (2) Create Schema of the JSON column
@@ -784,11 +784,11 @@ https://sparkbyexamples.com/pyspark/pyspark-parse-json-from-string-column-text-f
     +-------+---------------+-------------------+-----+
     ```
 
-#### [b2] Create schema from JSON
+#### [b2] Create schema from JSON / Dict
 ==> https://sparkbyexamples.com/pyspark/pyspark-structtype-and-structfield/
 
   <details>
-      <summary>Schema in JSON</summary>
+      <summary>Create schema in Dict / JSON</summary>
 
 ```python
   schema_json: dict = {
