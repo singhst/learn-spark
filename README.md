@@ -38,7 +38,7 @@
     - [\[a\] WITHOUT schema definition](#a-without-schema-definition)
     - [\[b\] WITH schema definition](#b-with-schema-definition)
       - [\[b1\] Create schema manually](#b1-create-schema-manually)
-      - [\[b2\] Create schema from JSON](#b2-create-schema-from-json)
+      - [\[b2\] Create schema from JSON / Dict](#b2-create-schema-from-json--dict)
   - [Parse JSON from RESTful API](#parse-json-from-restful-api)
   - [\[NOT GOOD\] ~~Read `JSON` string to pySpark dataframe~~](#not-good-read-json-string-to-pyspark-dataframe)
     - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
@@ -77,6 +77,8 @@
   - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
   - [UDF `df.withColumn`, user defined function](#udf-dfwithcolumn-user-defined-function)
   - [`melt()` - Wide to long](#melt---wide-to-long)
+- [Databricks](#databricks)
+  - [Write string to a single .txt file](#write-string-to-a-single-txt-file)
 - [Graph, edge, vertice, Graphframe](#graph-edge-vertice-graphframe)
   - [`GraphFrame(v, e)`, Create GraphFrame](#graphframev-e-create-graphframe)
   - [Explore `GraphFrame`](#explore-graphframe)
@@ -1861,6 +1863,20 @@ Result:
 +-----------+--------+----------------+
 ```
 
+# Databricks
+
+## Write string to a single .txt file
+
+```python
+# Define the file path and string content
+file_path = "/mnt/databricks-mount/your_file_name.txt"
+content = "Your string content"
+
+# Save the string content as a .txt file in Azure Blob Storage
+dbutils.fs.put(file_path, content, overwrite=True)
+
+print("File uploaded successfully.")
+```
 
 # Graph, edge, vertice, Graphframe
 
