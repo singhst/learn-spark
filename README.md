@@ -86,6 +86,7 @@
   - [`.find("(a)-[e]->(b)")`, Motif finding](#finda-e-b-motif-finding)
   - [Subgraphs](#subgraphs)
 - [Database Connection](#database-connection)
+  - [Read Database Concurrently](#read-database-concurrently)
 - [spark-install-macos](#spark-install-macos)
   - [How to start Jupyter Notebook with Spark + GraphFrames](#how-to-start-jupyter-notebook-with-spark--graphframes)
     - [Start it locally](#start-it-locally)
@@ -2047,6 +2048,79 @@ df = spark.read.jdbc(url=url, table=table_name, properties=properties)
 mode = "overwrite"
 df.write.jdbc(url=url, table=table_name, mode=mode, properties=properties)
 ```
+
+## Read Database Concurrently
+
+https://stackoverflow.com/questions/53404288/only-single-thread-executes-parallel-sql-query-with-pyspark-using-multiprocessin
+
+Setup:
+```python
+driverPath = r'C:\src\NetSuiteJDBC\NQjc.jar'
+os.environ["PYSPARK_SUBMIT_ARGS"] = (
+    "--driver-class-path '{0}' --jars '{0}' --master local[*] --conf 'spark.scheduler.mode=FAIR' --conf 'spark.scheduler.allocation.file=C:\\src\\PySparkConfigs\\fairscheduler.xml' pyspark-shell".format(driverPath)
+)
+
+import findspark
+findspark.init()
+from pyspark import SparkContext, SparkConf
+from pyspark.sql import SparkSession, Column, Row, SQLContext
+from pyspark.sql.functions import col, split, regexp_replace, when
+from pyspark.sql.types import ArrayType, IntegerType, StringType
+
+spark = SparkSession.builder.appName("sparkNetsuite").getOrCreate()
+spark.sparkContext.setLogLevel("INFO")
+spark.sparkContext.setLocalProperty("spark.scheduler.pool", "production")
+sc = SparkContext.getOrCreate()
+```
+
+JDBC connection logic:
+```python
+# In sparkMethods.py file:
+def getAndSaveTableInPySpark(tableName):
+    import os
+    import os.path
+    from pyspark.sql import SparkSession, SQLContext
+    spark = SparkSession.builder.appName("sparkNetsuite").getOrCreate()
+    spark.sparkContext.setLogLevel("INFO")
+    spark.sparkContext.setLocalProperty("spark.scheduler.pool", "production")
+
+    jdbcDF = spark.read \
+        .format("jdbc") \
+        .option("url", "OURCONNECTIONURL;") \
+        .option("driver", "com.netsuite.jdbc.openaccess.OpenAccessDriver") \
+        .option("dbtable", tableName) \
+        .option("user", "USERNAME") \
+        .option("password", "PASSWORD") \
+        .load()
+
+    filePath = "C:\\src\\NetsuiteSparkProject\\" + tableName + "\\" + tableName + ".parquet"
+    jdbcDF.write.parquet(filePath)
+    fileExists = os.path.exists(filePath)
+    if(fileExists):
+        return (filePath + " exists!")
+    else:
+        return (filePath + " could not be written!")
+```
+
+Multi-thread read Database:
+```python
+from multiprocessing.pool import ThreadPool
+pool = ThreadPool(5)
+results = pool.map(sparkMethods.getAndSaveTableInPySpark, top5Tables)
+pool.close() 
+pool.join() 
+print(*results, sep='\n')
+```
+
+Output:
+```shell
+C:\src\NetsuiteSparkProject\SALES_TERRITORY_PLAN_PARTNER\SALES_TERRITORY_PLAN_PARTNER.parquet exists!
+C:\src\NetsuiteSparkProject\WORK_ORDER_SCHOOLS_TO_INSTALL_MAP\WORK_ORDER_SCHOOLS_TO_INSTALL_MAP.parquet exists!
+C:\src\NetsuiteSparkProject\ITEM_ACCOUNT_MAP\ITEM_ACCOUNT_MAP.parquet exists!
+C:\src\NetsuiteSparkProject\PRODUCT_TRIAL_STATUS\PRODUCT_TRIAL_STATUS.parquet exists!
+C:\src\NetsuiteSparkProject\ACCOUNT_PERIOD_ACTIVITY\ACCOUNT_PERIOD_ACTIVITY.parquet exists!
+```
+
 
 # spark-install-macos
 
