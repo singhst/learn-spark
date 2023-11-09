@@ -85,6 +85,7 @@
   - [Filter, `g.filterVerices()` `g.filterEdges()`](#filter-gfilterverices-gfilteredges)
   - [`.find("(a)-[e]->(b)")`, Motif finding](#finda-e-b-motif-finding)
   - [Subgraphs](#subgraphs)
+- [Database Connection](#database-connection)
 - [spark-install-macos](#spark-install-macos)
   - [How to start Jupyter Notebook with Spark + GraphFrames](#how-to-start-jupyter-notebook-with-spark--graphframes)
     - [Start it locally](#start-it-locally)
@@ -2021,6 +2022,31 @@ Output:
 +---+---+------------+
 ```
 
+# Database Connection
+
+https://medium.com/@uzzaman.ahmed/pyspark-dataframe-api-read-and-write-data-from-databases-5b58548d1baa
+
+Reading and writing to SQL Server:
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+    .appName("database-read-write") \
+    .getOrCreate()
+
+url = "jdbc:sqlserver://<hostname>:<port>;database=<database_name>"
+properties = {
+    "user": "<username>",
+    "password": "<password>",
+    "driver": "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+}
+
+table_name = "<table_name>"
+df = spark.read.jdbc(url=url, table=table_name, properties=properties)
+
+mode = "overwrite"
+df.write.jdbc(url=url, table=table_name, mode=mode, properties=properties)
+```
 
 # spark-install-macos
 
