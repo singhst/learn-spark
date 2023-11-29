@@ -54,7 +54,7 @@
   - [\[ing\] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
   - [Merge Two DataFrames with Different Columns or Schema](#merge-two-dataframes-with-different-columns-or-schema)
     - [Steps](#steps)
-  - [Rename Columns,](#rename-columns)
+  - [Rename Columns](#rename-columns)
     - [(1) Built-in `withColumnRenamed()`](#1-built-in-withcolumnrenamed)
     - [(2) `SELECT` method, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#2-select-method-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
     - [Lowercase all column names](#lowercase-all-column-names)
@@ -1388,7 +1388,45 @@ Reading .csv/.json by a pre-defined schema can speed up data import, because Spa
 1. Create the missing columns for both dataframes and filled them will NULL
 2. UNION two dataframes
 
-## Rename Columns, 
+Step 1 - Create the missing columns:
+  ```python
+  import pyspark.sql.functions as F
+
+  data = [["1", "sravan", "kakumanu"], 
+          ["2", "ojaswi", "hyd"], 
+          ["3", "rohith", "delhi"], 
+          ["4", "sridevi", "kakumanu"], 
+          ["5", "bobby", "guntur"]] 
+  columns = ['ID', 'NAME', 'Address'] 
+  dataframe1 = spark.createDataFrame(data, columns) 
+    
+  data = [["1", 23], 
+          ["2", 21], 
+          ["3", 32], 
+          ] 
+  columns = ['ID', 'Age'] 
+  dataframe2 = spark.createDataFrame(data, columns) 
+
+  overall_columns = set(
+      [*df_sdu_suppliers.columns, *df_sdu_buyers.columns, *df_crunchbase.columns]
+  )
+  print(len(overall_columns), overall_columns)
+  ```
+
+  ```python
+  def createMissingDfColumns(df: DataFrame, target_columns:list):
+    _columns = list(filter(lambda _col: _col not in df.columns, target_columns))
+    print(_columns)
+    for column in _columns: 
+        df = df.withColumn(column, F.lit(None)) 
+    return df.select(*target_columns)
+
+  dataframe1_target = createMissingDfColumns(df=dataframe1, target_columns=overall_columns)
+  dataframe2_target = createMissingDfColumns(df=dataframe2, target_columns=overall_columns)
+  ```
+
+
+## Rename Columns
 ### (1) Built-in `withColumnRenamed()`
 
 [Ref](https://sparkbyexamples.com/pyspark/pyspark-rename-dataframe-column/)
