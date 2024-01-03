@@ -43,6 +43,7 @@
   - [\[NOT GOOD\] ~~Read `JSON` string to pySpark dataframe~~](#not-good-read-json-string-to-pyspark-dataframe)
     - [Read `JSON` to spark Dataframe first](#read-json-to-spark-dataframe-first)
     - [Details](#details)
+  - [Use `.` and `:` syntax to query nested data](#use--and--syntax-to-query-nested-data)
 - [Deal with `.parquet`](#deal-with-parquet)
   - [What is `.parquet`?](#what-is-parquet)
 - [Spark Dataframe](#spark-dataframe)
@@ -52,10 +53,12 @@
       - [Character range `[a-b]` read](#character-range-a-b-read)
       - [Alternation `{a,b,c}` read](#alternation-abc-read)
   - [\[ing\] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
-  - [Merge Two DataFrames with Different Columns or Schema](#merge-two-dataframes-with-different-columns-or-schema)
-    - [Steps](#steps)
+  - [Merge/Union Two DataFrames with Different Columns or Schema](#mergeunion-two-dataframes-with-different-columns-or-schema)
+    - [(1) `unionByName(allowMissingColumns=True)`](#1-unionbynameallowmissingcolumnstrue)
+    - [(2) Create missing columns manually](#2-create-missing-columns-manually)
   - [Rename Columns](#rename-columns)
-    - [(1) Built-in `withColumnRenamed()`](#1-built-in-withcolumnrenamed)
+    - [(1.1) Built-in `withColumnsRenamed()` (New in version 3.4.0)](#11-built-in-withcolumnsrenamed-new-in-version-340)
+    - [(1.2) Built-in `withColumnRenamed()`](#12-built-in-withcolumnrenamed)
     - [(2) `SELECT` method, `df.select(*[F.col(old_name).alias("new_name") for old_name in rename_map])`](#2-select-method-dfselectfcolold_namealiasnew_name-for-old_name-in-rename_map)
     - [Lowercase all column names](#lowercase-all-column-names)
     - [Lowercase values in all columns](#lowercase-values-in-all-columns)
@@ -1169,6 +1172,45 @@ Steps,
     +----------+-----+-----+
     ```
 
+## Use `.` and `:` syntax to query nested data
+
+  Data, nested JSON in `value`:
+  ```
+  +-------------------+---------------------------------------------------------------------------------------------------------------------------+
+  |                key|                                                                                                                      value|
+  +-------------------+---------------------------------------------------------------------------------------------------------------------------+
+  | UA000000107384208 | {"device":"macOS","ecommerce":{},"event_name":"checkout","event_previous_timestamp":1593880801027797,"event_timestamp":1593880822506642,"geo":{"city":"Traverse City","state":"MI"},"items":[{"item_id":"M_STAN_T","item_name":"Standard Twin Mattress","item_revenue_in_usd":595.0,"price_in_usd":595.0,"quantity":1}],"traffic_source":"google","user_first_touch_timestamp":1593879413256859,"user_id":"UA000000107384208"}
+  | UA000000107388621 | {"device":"Windows","ecommerce":{},"event_name":"email_coupon","event_previous_timestamp":1593880770092554,"event_timestamp":1593880829320848,"geo":{"city":"Hickory","state":"NC"},"items":[{"coupon":"NEWBED10","item_id":"M_STAN_F","item_name":"Standard Full Mattress","item_revenue_in_usd":850.5,"price_in_usd":945.0,"quantity":1}],"traffic_source":"direct","user_first_touch_timestamp":1593879889503719,"user_id":"UA000000107388621"}
+  | UA000000106459577 | {"device":"Linux","ecommerce":{"purchase_revenue_in_usd":1047.6,"total_item_quantity":2,"unique_items":2},"event_name":"finalize","event_previous_timestamp":1593879787820475,"event_timestamp":1593879948830076,"geo":{"city":"Huntington Park","state":"CA"},"items":[{"coupon":"NEWBED10","item_id":"M_STAN_Q","item_name":"Standard Queen Mattress","item_revenue_in_usd":940.5,"price_in_usd":1045.0,"quantity":1},{"coupon":"NEWBED10","item_id":"P_DOWN_S","item_name":"Standard Down Pillow","item_revenue_in_usd":107.10000000000001,"price_in_usd":119.0,"quantity":1}],"traffic_source":"email","user_first_touch_timestamp":1593583891412316,"user_id":"UA000000106459577"}|
+  +-------------------+---------------------------------------------------------------------------------------------------------------------------+
+  ```
+
+  SQL
+  * Use : syntax in queries to access subfields in JSON strings
+  * Use . syntax in queries to access subfields in struct types
+  ```SQL
+  SELECT * FROM events_strings WHERE value:event_name = "finalize" ORDER BY key LIMIT 1
+  ```
+
+  OR Python:
+  ```python
+  display(events_stringsDF
+      .where("value:event_name = 'finalize'")
+      .orderBy("key")
+      .limit(1)
+  )
+  ```
+
+  Output:
+  ```
+  +-------------------+---------------------------------------------------------------------------------------------------------------------------+
+  |                key|                                                                                                                      value|
+  +-------------------+---------------------------------------------------------------------------------------------------------------------------+
+  | UA000000106459577 | {"device":"Linux","ecommerce":{"purchase_revenue_in_usd":1047.6,"total_item_quantity":2,"unique_items":2},"event_name":"finalize","event_previous_timestamp":1593879787820475,"event_timestamp":1593879948830076,"geo":{"city":"Huntington Park","state":"CA"},"items":[{"coupon":"NEWBED10","item_id":"M_STAN_Q","item_name":"Standard Queen Mattress","item_revenue_in_usd":940.5,"price_in_usd":1045.0,"quantity":1},{"coupon":"NEWBED10","item_id":"P_DOWN_S","item_name":"Standard Down Pillow","item_revenue_in_usd":107.10000000000001,"price_in_usd":119.0,"quantity":1}],"traffic_source":"email","user_first_touch_timestamp":1593583891412316,"user_id":"UA000000106459577"}|
+  +-------------------+---------------------------------------------------------------------------------------------------------------------------+
+  ```
+
+
 # Deal with `.parquet`
 
 [ xxx ]
@@ -1380,13 +1422,34 @@ Reading .csv/.json by a pre-defined schema can speed up data import, because Spa
 * [Spark read JSON with or without schema](https://sparkbyexamples.com/spark/spark-read-json-with-schema/)
 
 
-## Merge Two DataFrames with Different Columns or Schema
+## Merge/Union Two DataFrames with Different Columns or Schema
+
+### (1) `unionByName(allowMissingColumns=True)`
+[pyspark native function](https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrame.unionByName.html)
+
+  ```python
+  df1 = spark.createDataFrame([[1, 2, 3]], ["col0", "col1", "col2"])
+  df2 = spark.createDataFrame([[4, 5, 6]], ["col1", "col2", "col3"])
+  df1.unionByName(df2, allowMissingColumns=True).show()
+  ```
+
+  Output:
+  ```shell
+  +----+----+----+----+
+  |col0|col1|col2|col3|
+  +----+----+----+----+
+  |   1|   2|   3|null|
+  |null|   4|   5|   6|
+  +----+----+----+----+
+  ```
+
+### (2) Create missing columns manually
 
 [reference](https://www.geeksforgeeks.org/pyspark-merge-two-dataframes-with-different-columns-or-schema/)
 
-### Steps
-1. Create the missing columns for both dataframes and filled them will NULL
-2. UNION two dataframes
+Steps,
+  1. Create the missing columns for both dataframes and filled them will NULL
+  2. UNION two dataframes
 
 Step 1 - Create the missing columns:
   ```python
@@ -1427,7 +1490,28 @@ Step 1 - Create the missing columns:
 
 
 ## Rename Columns
-### (1) Built-in `withColumnRenamed()`
+
+### (1.1) Built-in `withColumnsRenamed()` (New in version 3.4.0)
+
+https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.withColumnsRenamed.html
+
+  ```python
+  df = spark.createDataFrame([(2, "Alice"), (5, "Bob")], schema=["age", "name"])
+  df = df.withColumns({'age2': df.age + 2, 'age3': df.age + 3})
+  df.withColumnsRenamed({'age2': 'age4', 'age3': 'age5'}).show()
+  ```
+
+  Output:
+  ```
+  +---+-----+----+----+
+  |age| name|age4|age5|
+  +---+-----+----+----+
+  |  2|Alice|   4|   5|
+  |  5|  Bob|   7|   8|
+  +---+-----+----+----+
+  ```
+
+### (1.2) Built-in `withColumnRenamed()`
 
 [Ref](https://sparkbyexamples.com/pyspark/pyspark-rename-dataframe-column/)
 
