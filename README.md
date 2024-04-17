@@ -81,6 +81,8 @@
   - [UDF `df.withColumn`, user defined function](#udf-dfwithcolumn-user-defined-function)
   - [`melt()` - Wide to long](#melt---wide-to-long)
 - [Databricks](#databricks)
+  - [Connect to Azure Data Lake Storage Gen2 and Blob Storage](#connect-to-azure-data-lake-storage-gen2-and-blob-storage)
+    - [Access Azure storage](#access-azure-storage)
   - [Write string to a single .txt file](#write-string-to-a-single-txt-file)
 - [Graph, edge, vertice, Graphframe](#graph-edge-vertice-graphframe)
   - [`GraphFrame(v, e)`, Create GraphFrame](#graphframev-e-create-graphframe)
@@ -1989,6 +1991,40 @@ Result:
 
 # Databricks
 
+## Connect to Azure Data Lake Storage Gen2 and Blob Storage
+
+* https://docs.databricks.com/en/connect/storage/azure-storage.html
+* https://learn.microsoft.com/en-us/azure/databricks/security/secrets/secret-scopes
+
+Need to store secrets (=key-value pair) in Azure Key Vault first, then create a secret scope backed by Azure Key Vault in Databricks.
+
+Because the Azure Key Vault-backed secret scope is a __read-only__ interface to the Key Vault, the PutSecret and DeleteSecret the Secrets API operations are not allowed.
+
+```python
+service_credential = dbutils.secrets.get(scope="<secret-scope>",key="<service-credential-key>")
+
+spark.conf.set("fs.azure.account.auth.type.<storage-account>.dfs.core.windows.net", "OAuth")
+spark.conf.set("fs.azure.account.oauth.provider.type.<storage-account>.dfs.core.windows.net", "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")
+spark.conf.set("fs.azure.account.oauth2.client.id.<storage-account>.dfs.core.windows.net", "<application-id>")
+spark.conf.set("fs.azure.account.oauth2.client.secret.<storage-account>.dfs.core.windows.net", service_credential)
+spark.conf.set("fs.azure.account.oauth2.client.endpoint.<storage-account>.dfs.core.windows.net", "https://login.microsoftonline.com/<directory-id>/oauth2/token")
+```
+
+Replace
+* <secret-scope> with the Databricks secret scope name.
+* <service-credential-key> with the name of the key containing the client secret.
+* <storage-account> with the name of the Azure storage account.
+* <application-id> with the Application (client) ID for the Microsoft Entra ID application.
+* <directory-id> with the Directory (tenant) ID for the Microsoft Entra ID application.
+
+### Access Azure storage
+
+```python
+spark.read.load("abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<path-to-data>")
+
+dbutils.fs.ls("abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<path-to-data>")
+```
+
 ## Write string to a single .txt file
 
 ```python
@@ -2001,6 +2037,7 @@ dbutils.fs.put(file_path, content, overwrite=True)
 
 print("File uploaded successfully.")
 ```
+
 
 # Graph, edge, vertice, Graphframe
 
