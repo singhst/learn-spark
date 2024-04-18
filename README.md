@@ -80,6 +80,10 @@
   - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
   - [UDF `df.withColumn`, user defined function](#udf-dfwithcolumn-user-defined-function)
   - [`melt()` - Wide to long](#melt---wide-to-long)
+  - [Find duplicates and non-duplicates](#find-duplicates-and-non-duplicates)
+    - [(1) `exceptAll()` what is pyspark "exceptAll()" function? Explain it with example](#1-exceptall-what-is-pyspark-exceptall-function-explain-it-with-example)
+    - [(2) `subtract()` - Is this the same as "subtract()"? Can I use join (but which type of join) to achieve this?](#2-subtract---is-this-the-same-as-subtract-can-i-use-join-but-which-type-of-join-to-achieve-this)
+    - [`left anti join` - how to get the duplicates and non-duplicates if I use this "left anti" join?](#left-anti-join---how-to-get-the-duplicates-and-non-duplicates-if-i-use-this-left-anti-join)
 - [Databricks](#databricks)
   - [Connect to Azure Data Lake Storage Gen2 and Blob Storage](#connect-to-azure-data-lake-storage-gen2-and-blob-storage)
     - [Access Azure storage](#access-azure-storage)
@@ -1988,6 +1992,137 @@ Result:
 | id00012398| 2023-05|             0.0|
 +-----------+--------+----------------+
 ```
+
+## Find duplicates and non-duplicates
+
+### (1) `exceptAll()` what is pyspark "exceptAll()" function? Explain it with example
+
+The `exceptAll()` function in PySpark is used to return a new DataFrame containing rows in the first DataFrame but not in another DataFrame, while preserving duplicates. This is equivalent to `EXCEPT ALL` in SQL. As standard in SQL, this function resolves columns by position (not by name)¹.
+
+Here's an example:
+
+```python
+# Create two DataFrames
+df1 = spark.createDataFrame(
+    [("a", 1), ("a", 1), ("a", 1), ("a", 2), ("b", 3), ("c", 4)], ["C1", "C2"]
+)
+df2 = spark.createDataFrame([("a", 1), ("b", 3)], ["C1", "C2"])
+
+# Use exceptAll() function
+result = df1.exceptAll(df2)
+
+# Show the result
+result.show()
+```
+
+Output:
+
+```
++---+---+
+| C1| C2|
++---+---+
+|  a|  1|
+|  a|  1|
+|  a|  2|
+|  c|  4|
++---+---+
+```
+
+In this example, the `exceptAll()` function returns all rows from `df1` that are not in `df2`, while preserving duplicates¹. So, even though the value `("a", 1)` appears three times in `df1` and once in `df2`, two instances of it are still present in the resulting DataFrame. This is because `exceptAll()` preserves duplicates.
+
+Source: Conversation with Bing, 18/04/2024
+(1) pyspark.sql.DataFrame.exceptAll — PySpark master documentation. https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.exceptAll.html.
+(2) pyspark.sql.DataFrame.exceptAll — PySpark master documentation. https://api-docs.databricks.com/python/pyspark/latest/pyspark.sql/api/pyspark.sql.DataFrame.exceptAll.html.
+(3) PySpark: Get Rows Which Are Not in Another DataFrame. https://www.statology.org/pyspark-get-rows-not-in-another-dataframe/.
+(4) github.com. https://github.com/PandaGege/big_data/tree/eb96d4439611337f4d95764b65ccbd13a270b899/spark%2Fsql_dataframe_guide.py.
+(5) github.com. https://github.com/bhishanpdl/Big_Data_Analysis/tree/b4aec3a0e285de5cac02ad7390712635a73a24db/a01_PySpark%2Fa01_Pyspark_Basics%2FREADME.md.
+(6) github.com. https://github.com/Sapphirine/Esport-Game-Prediction/tree/243a729cd395a4fb63a800ac88a13b55bdbd3989/dashboard%2Fvenv%2Flib%2Fpython2.7%2Fsite-packages%2Fpyspark%2Fsql%2Fdataframe.py.
+
+
+### (2) `subtract()` - Is this the same as "subtract()"? Can I use join (but which type of join) to achieve this?
+
+The `subtract()` function in PySpark is similar to `exceptAll()`, but there's a key difference: `subtract()` is equivalent to `EXCEPT DISTINCT` in SQL¹. This means that `subtract()` removes all duplicates. If a row appears in both DataFrames, it will be removed entirely from the first DataFrame¹.
+
+Here's an example:
+
+```python
+# Create two DataFrames
+df1 = spark.createDataFrame(
+    [("a", 1), ("a", 1), ("b", 3), ("c", 4)], ["C1", "C2"]
+)
+df2 = spark.createDataFrame([("a", 1), ("a", 1), ("b", 3)], ["C1", "C2"])
+
+# Use subtract() function
+result = df1.subtract(df2)
+
+# Show the result
+result.show()
+```
+
+Output:
+
+```
++---+---+
+| C1| C2|
++---+---+
+|  c|  4|
++---+---+
+```
+
+In this example, the `subtract()` function removes all instances of `("a", 1)` from `df1` because it appears in `df2`¹.
+
+As for using a join operation to achieve the same result as `exceptAll()`, you can use a `LEFT ANTI JOIN`. This type of join returns only the rows from the left DataFrame that are not present in the right DataFrame². Here's how you can do it:
+
+```python
+# Use left anti join
+result = df1.join(df2, ["C1", "C2"], "left_anti")
+
+# Show the result
+result.show()
+```
+
+This will give you the same result as `df1.exceptAll(df2)`. However, please note that this method requires the join to be performed on all columns. If you want to perform the operation based on specific columns, you would need to adjust the join condition accordingly².
+
+Source: Conversation with Bing, 18/04/2024
+(1) pyspark.sql.DataFrame.subtract — PySpark master documentation. https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.subtract.html.
+(2) Spark: subtract two DataFrames - Stack Overflow. https://stackoverflow.com/questions/29537564/spark-subtract-two-dataframes.
+(3) python - Subtract in pyspark dataframe - Stack Overflow. https://stackoverflow.com/questions/57483536/subtract-in-pyspark-dataframe.
+(4) How to subtract two columns of pyspark dataframe and also divide?. https://stackoverflow.com/questions/57105403/how-to-subtract-two-columns-of-pyspark-dataframe-and-also-divide.
+(5) pyspark.sql.DataFrame.exceptAll — PySpark master documentation. https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrame.exceptAll.html.
+(6) Keeping identifier in exceptAll in PySpark - Stack Overflow. https://stackoverflow.com/questions/59762501/keeping-identifier-in-exceptall-in-pyspark.
+(7) pyspark.sql.DataFrame.exceptAll — PySpark master documentation. https://api-docs.databricks.com/python/pyspark/latest/pyspark.sql/api/pyspark.sql.DataFrame.exceptAll.html.
+(8) github.com. https://github.com/intel-analytics/BigDL/tree/11a0600676f8c400fa2686f5a52d70dcc754b728/ppml%2Ftrusted-big-data-ml%2Fpython%2Fdocker-graphene%2Fexamples%2Fsql_example.py.
+
+### `left anti join` - how to get the duplicates and non-duplicates if I use this "left anti" join?
+
+To get the duplicates and non-duplicates using a "left anti" join in PySpark, you can follow these steps:
+
+1. **Non-Duplicates**: The result of a "left anti" join itself gives you the non-duplicate records. These are the records that are present in the left DataFrame but not in the right DataFrame².
+
+```python
+non_duplicates = df1.join(df2, ["C1", "C2"], "left_anti")
+non_duplicates.show()
+```
+
+2. **Duplicates**: To get the duplicate records, you can first find all records in the left DataFrame, then subtract the non-duplicates from it³.
+
+```python
+all_records = df1
+duplicates = all_records.subtract(non_duplicates)
+duplicates.show()
+```
+
+In this example, `all_records` is a DataFrame that contains all records from `df1`. `non_duplicates` is the DataFrame we obtained from the "left anti" join, which contains all records from `df1` that are not in `df2`. The `subtract()` function then gives us all records from `all_records` that are not in `non_duplicates`, which are the duplicate records³.
+
+Please note that this method considers all columns for identifying duplicates. If you want to consider specific columns, you would need to adjust the join and subtract conditions accordingly³. Also, be aware that null values are treated as distinct in PySpark, so you might need to handle them separately if your data contains null values¹.
+
+Source: Conversation with Bing, 18/04/2024
+(1) PySpark SQL Left Anti Join with Example - Spark By Examples. https://sparkbyexamples.com/pyspark/pyspark-sql-left-anti-join-with-example/.
+(2) Solved: How to get all occurrences of duplicate records in .... https://community.databricks.com/t5/data-engineering/how-to-get-all-occurrences-of-duplicate-records-in-a-pyspark/td-p/19818.
+(3) pyspark - Left Anti join not consider null as duplicate values in Spark .... https://stackoverflow.com/questions/62423032/left-anti-join-not-consider-null-as-duplicate-values-in-spark.
+(4) Spark SQL Left Anti Join with Example - Spark By {Examples}. https://sparkbyexamples.com/spark/spark-sql-left-anti-join-with-example/.
+(5) undefined. https://spark.apache.org/docs/3.0.0-preview/sql-ref-null-semantics.html.
+
 
 # Databricks
 
