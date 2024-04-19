@@ -79,6 +79,9 @@
     - [`spark.sql()` + `df.createOrReplaceTempView("sql_table")`](#sparksql--dfcreateorreplacetempviewsql_table)
   - [`df1.union(df2)` concat 2 dataframes](#df1uniondf2-concat-2-dataframes)
   - [UDF `df.withColumn`, user defined function](#udf-dfwithcolumn-user-defined-function)
+    - [Explicitly define `udf`](#explicitly-define-udf)
+    - [Decorator `@udf`](#decorator-udf)
+    - [Custom decorator `@py_or_udf`](#custom-decorator-py_or_udf)
   - [`melt()` - Wide to long](#melt---wide-to-long)
   - [Find duplicates and non-duplicates](#find-duplicates-and-non-duplicates)
     - [(1) `exceptAll()` what is pyspark "exceptAll()" function? Explain it with example](#1-exceptall-what-is-pyspark-exceptall-function-explain-it-with-example)
@@ -1933,6 +1936,79 @@ df_concat = df_1.union(df_2)
 ## UDF `df.withColumn`, user defined function
 
 [Reference](https://sparkbyexamples.com/pyspark/pyspark-udf-user-defined-function/)
+
+### Explicitly define `udf`
+
+https://medium.com/@ayplam/developing-pyspark-udfs-d179db0ccc87
+
+Explicitly define a udf that you can use as a pyspark function.
+```python
+  from pyspark.sql.types import StringType
+  from pyspark.sql.functions import udf, col
+  def say_hello(name : str) -> str:
+      return f"Hello {name}"
+  assert say_hello("Summer") == "Hello Summer"
+  say_hello_udf = udf(lambda name: say_hello(name), StringType())
+  df = spark.createDataFrame([("Rick,"),("Morty,")], ["name"])
+  df.withColumn("greetings", say_hello_udf(col("name"))).show()
+
+  # +------+------------+
+  # |  name|   greetings|
+  # +------+------------+
+  # |  Rick|  Hello Rick|
+  # | Morty| Hello Morty|
+  # +------+------------+
+```
+However, this means that for every pyspark UDF, there are two functions to keep track of — a regular python one and another pyspark `_udf` one. For a cleaner pattern, the udf function is also a built in decorator.
+
+### Decorator `@udf`
+
+https://medium.com/@ayplam/developing-pyspark-udfs-d179db0ccc87
+
+```python
+  @udf(returnType=StringType())
+  def say_hello(name):
+      return f"Hello {name}"
+  # Below `assert` doesn't work anymore if decorator `@udf` is used
+  # assert say_hello("Summer") == "Hello Summer"
+  df.withColumn("greetings", say_hello(col("name"))).show()
+```
+
+### Custom decorator `@py_or_udf`
+
+https://medium.com/@ayplam/developing-pyspark-udfs-d179db0ccc87
+
+Introducing — `py_or_udf` — a decorator that allows a method to act as either a regular python method or a pyspark UDF
+
+```python
+from typing import Callable
+from pyspark.sql import Column
+from pyspark.sql.functions import udf, col
+from pyspark.sql.types import StringType, IntegerType, ArrayType, DataType
+
+class py_or_udf:
+    def __init__(self, returnType : DataType=StringType()):
+        self.spark_udf_type = returnType
+        
+    def __call__(self, func : Callable):
+        def wrapped_func(*args, **kwargs):
+            if any([isinstance(arg, Column) for arg in args]) or \
+                any([isinstance(vv, Column) for vv in kwargs.values()]):
+                return udf(func, self.spark_udf_type)(*args, **kwargs)
+            else:
+                return func(*args, **kwargs)
+            
+        return wrapped_func
+
+@py_or_udf(returnType=StringType())
+def say_hello(name):
+     return f"Hello {name}"
+# This works
+assert say_hello("world") == "Hello world"
+# This also works
+df.withColumn("greeting", say_hello(col("name"))).show()
+```
+
 
 ## `melt()` - Wide to long
 * https://stackoverflow.com/questions/41670103/how-to-melt-spark-dataframe
