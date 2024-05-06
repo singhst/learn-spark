@@ -89,7 +89,7 @@
     - [`left anti join` - how to get the duplicates and non-duplicates if I use this "left anti" join?](#left-anti-join---how-to-get-the-duplicates-and-non-duplicates-if-i-use-this-left-anti-join)
 - [Databricks](#databricks)
   - [Connect to Azure Data Lake Storage Gen2 and Blob Storage](#connect-to-azure-data-lake-storage-gen2-and-blob-storage)
-    - [Access Azure storage](#access-azure-storage)
+    - [Access Files in Azure Storage Account](#access-files-in-azure-storage-account)
   - [Write string to a single .txt file](#write-string-to-a-single-txt-file)
   - [Asynchronous logic from Databricks](#asynchronous-logic-from-databricks)
     - [Async download images to local then upload to Azure Blob Storage](#async-download-images-to-local-then-upload-to-azure-blob-storage)
@@ -2230,12 +2230,16 @@ Replace
 * <application-id> with the Application (client) ID for the Microsoft Entra ID application.
 * <directory-id> with the Directory (tenant) ID for the Microsoft Entra ID application.
 
-### Access Azure storage
+### Access Files in Azure Storage Account
 
 ```python
 spark.read.load("abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<path-to-data>")
 
 dbutils.fs.ls("abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<path-to-data>")
+
+### from mount point
+import pandas as pd
+pd.read_csv("file:/dbfs/mnt/ext-folder/UAT/logo/log/tmp.csv")
 ```
 
 ## Write string to a single .txt file
