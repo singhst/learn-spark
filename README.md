@@ -91,6 +91,8 @@
   - [Connect to Azure Data Lake Storage Gen2 and Blob Storage](#connect-to-azure-data-lake-storage-gen2-and-blob-storage)
     - [Access Azure storage](#access-azure-storage)
   - [Write string to a single .txt file](#write-string-to-a-single-txt-file)
+  - [Asynchronous logic from Databricks](#asynchronous-logic-from-databricks)
+    - [Async download images to local then upload to Azure Blob Storage](#async-download-images-to-local-then-upload-to-azure-blob-storage)
 - [Graph, edge, vertice, Graphframe](#graph-edge-vertice-graphframe)
   - [`GraphFrame(v, e)`, Create GraphFrame](#graphframev-e-create-graphframe)
   - [Explore `GraphFrame`](#explore-graphframe)
@@ -2247,6 +2249,76 @@ content = "Your string content"
 dbutils.fs.put(file_path, content, overwrite=True)
 
 print("File uploaded successfully.")
+```
+
+## Asynchronous logic from Databricks
+
+### Async download images to local then upload to Azure Blob Storage
+
+* https://poe.com/s/vcyaLuQpk49VG5A4tIBa
+* https://poe.com/s/38ETD8ZpgOlhHYYht3nX
+
+```python
+import nest_asyncio     ### need to add if using async in Databricks
+nest_asyncio.apply()    ### https://community.databricks.com/t5/data-engineering/asynchronous-api-calls-from-databricks/td-p/4691
+
+################################
+
+import aiohttp
+import asyncio
+from azure.storage.blob.aio import BlobServiceClient
+
+async def download_image(session, url, destination):
+    async with session.get(url) as response:
+        with open(destination, 'wb') as file:
+            while True:
+                chunk = await response.content.read(8192)
+                if not chunk:
+                    break
+                file.write(chunk)
+
+async def upload_image(blob_client, source, destination):
+    with open(source, "rb") as data:
+        await blob_client.upload_blob(data, blob_type="BlockBlob", overwrite=True, blob_name=destination)
+
+async def download_images_and_upload_to_azure(urls, destination_folder, connection_string, container_name):
+    tasks = []
+    async with aiohttp.ClientSession() as session:
+        for i, url in enumerate(urls):
+            destination = f"{destination_folder}/image_{i + 1}.jpg"
+            tasks.append(download_image(session, url, destination))
+
+        await asyncio.gather(*tasks)
+
+    blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+    container_client = blob_service_client.get_container_client(container_name)
+    
+    for i, url in enumerate(urls):
+        source = f"{destination_folder}/image_{i + 1}.jpg"
+        destination = f"images/image_{i + 1}.jpg"
+        await upload_image(container_client.get_blob_client(destination), source, destination)
+
+async def main():
+    # Define the list of image URLs
+    image_urls = [
+        "https://commons.wikimedia.org/wiki/File:ChatGPT_logo.svg#/media/File:ChatGPT_logo.svg",
+        "https://commons.wikimedia.org/wiki/File:Chatgpt_idwiktionary.jpg#/media/File:Chatgpt_idwiktionary.jpg",
+        "https://upload.wikimedia.org/wikipedia/commons/4/4d/OpenAI_Logo.svg"
+    ]
+
+    # Define the destination folder to save the downloaded images
+    destination_folder = "downloaded_images"
+
+    # Define your Azure Storage connection string and container name
+    connection_string = "<your_connection_string>"
+    container_name = "<your_container_name>"
+
+    # Start the download and upload process
+    await download_images_and_upload_to_azure(image_urls, destination_folder, connection_string, container_name)
+    print("Images downloaded and uploaded successfully.")
+
+# Run the asyncio event loop
+asyncio.run(main())
 ```
 
 
