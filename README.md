@@ -53,6 +53,11 @@
       - [Character range `[a-b]` read](#character-range-a-b-read)
       - [Alternation `{a,b,c}` read](#alternation-abc-read)
   - [\[ing\] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
+  - [convert Map, Array, or Struct Type Columns into JSON Strings](#convert-map-array-or-struct-type-columns-into-json-strings)
+    - [Exaplme Data](#exaplme-data)
+    - [`Map` / `MapType` Column to JSON StringType](#map--maptype-column-to-json-stringtype)
+    - [`List of MapType` column into JSON StringType](#list-of-maptype-column-into-json-stringtype)
+    - [`ArrayType` column into JSON StringType](#arraytype-column-into-json-stringtype)
   - [Merge/Union Two DataFrames with Different Columns or Schema](#mergeunion-two-dataframes-with-different-columns-or-schema)
     - [(1) `unionByName(allowMissingColumns=True)`](#1-unionbynameallowmissingcolumnstrue)
     - [(2) Create missing columns manually](#2-create-missing-columns-manually)
@@ -1431,6 +1436,153 @@ Reading .csv/.json by a pre-defined schema can speed up data import, because Spa
 
 * [Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
 * [Spark read JSON with or without schema](https://sparkbyexamples.com/spark/spark-read-json-with-schema/)
+
+
+## convert Map, Array, or Struct Type Columns into JSON Strings
+
+[reference](https://azurelib.com/how-to-convert-map-array-struct-type-into-json-string-in-pyspark-dataframe-in-azure-databricks)
+
+### Exaplme Data
+```python
+from pyspark.sql.session import SparkSession
+
+spark = SparkSession.builder 
+    .master("local[*]") 
+    .appName("azurelib.com") 
+    .getOrCreate()
+
+sc = spark.sparkContext
+
+data = [
+    {"id": 1, "name": {"first_name": "Etta", "last_name": "Burrel"}, "details": [{"gender": "Female"}, {"age": "46"}], "preferences": ["District of Columbia", "Colorado"]},
+    {"id": 2, "name": {"first_name": "Ky", "last_name": "Fiddyment"}, "details": [{"gender": "Male"}, {"age": "35"}], "preferences": ["California", "Massachusetts"]},
+    {"id": 3, "name": {"first_name": "Rod", "last_name": "Meineken"}, "details": [{"gender": "Male"}, {"age": "50"}], "preferences": ["North Carolina", "Minnesota"]},
+    {"id": 4, "name": {"first_name": "Selestina", "last_name": "Ley"}, "details": [{"gender": "Female"}, {"age": "47"}], "preferences": ["Michigan", "Pennsylvania"]},
+    {"id": 5, "name": {"first_name": "Alvan", "last_name": "Shee"}, "details": [{"gender": "Male"}, {"age": "34"}], "preferences": ["Montana", "California"]}
+]
+
+df = spark.createDataFrame(data).select("id", "name", "details", "preferences")
+df.printSchema()
+df.show(truncate=False)
+
+"""
+root
+ |-- id: long (nullable = true)
+ |-- name: map (nullable = true)
+ |    |-- key: string
+ |    |-- value: string (valueContainsNull = true)
+ |-- details: array (nullable = true)
+ |    |-- element: map (containsNull = true)
+ |    |    |-- key: string
+ |    |    |-- value: string (valueContainsNull = true)
+ |-- preferences: array (nullable = true)
+ |    |-- element: string (containsNull = true)
+
++---+-------------------------------------------+---------------------------------+--------------------------------+
+|id |name                                       |details                          |preferences                     |
++---+-------------------------------------------+---------------------------------+--------------------------------+
+|1  |{last_name -> Burrel, first_name -> Etta}  |[{gender -> Female}, {age -> 46}]|[District of Columbia, Colorado]|
+|2  |{last_name -> Fiddyment, first_name -> Ky} |[{gender -> Male}, {age -> 35}]  |[California, Massachusetts]     |
+|3  |{last_name -> Meineken, first_name -> Rod} |[{gender -> Male}, {age -> 50}]  |[North Carolina, Minnesota]     |
+|4  |{last_name -> Ley, first_name -> Selestina}|[{gender -> Female}, {age -> 47}]|[Michigan, Pennsylvania]        |
+|5  |{last_name -> Shee, first_name -> Alvan}   |[{gender -> Male}, {age -> 34}]  |[Montana, California]           |
++---+-------------------------------------------+---------------------------------+--------------------------------+
+"""
+```
+
+### `Map` / `MapType` Column to JSON StringType
+
+```python
+from pyspark.sql.functions import to_json
+
+df1 = df.select("name", to_json("name").alias("str_name"))
+df1.printSchema()
+df1.show(truncate=False)
+
+"""
+Output:
+
+root
+ |-- name: map (nullable = true)
+ |    |-- key: string
+ |    |-- value: string (valueContainsNull = true)
+ |-- str_name: string (nullable = true)
+
++-------------------------------------------+--------------------------------------------+
+|name                                       |str_name                                    |
++-------------------------------------------+--------------------------------------------+
+|{last_name -> Burrel, first_name -> Etta}  |{"last_name":"Burrel","first_name":"Etta"}  |
+|{last_name -> Fiddyment, first_name -> Ky} |{"last_name":"Fiddyment","first_name":"Ky"} |
+|{last_name -> Meineken, first_name -> Rod} |{"last_name":"Meineken","first_name":"Rod"} |
+|{last_name -> Ley, first_name -> Selestina}|{"last_name":"Ley","first_name":"Selestina"}|
+|{last_name -> Shee, first_name -> Alvan}   |{"last_name":"Shee","first_name":"Alvan"}   |
++-------------------------------------------+--------------------------------------------+
+
+"""
+```
+
+
+### `List of MapType` column into JSON StringType
+
+```python
+from pyspark.sql.functions import to_json
+
+df2 = df.select("details", to_json("details").alias("str_details"))
+df2.printSchema()
+df2.show(truncate=False)
+
+"""
+Output:
+
+root
+ |-- details: array (nullable = true)
+ |    |-- element: map (containsNull = true)
+ |    |    |-- key: string
+ |    |    |-- value: string (valueContainsNull = true)
+ |-- str_details: string (nullable = true)
+
++---------------------------------+----------------------------------+
+|details                          |str_details                       |
++---------------------------------+----------------------------------+
+|[{gender -> Female}, {age -> 46}]|[{"gender":"Female"},{"age":"46"}]|
+|[{gender -> Male}, {age -> 35}]  |[{"gender":"Male"},{"age":"35"}]  |
+|[{gender -> Male}, {age -> 50}]  |[{"gender":"Male"},{"age":"50"}]  |
+|[{gender -> Female}, {age -> 47}]|[{"gender":"Female"},{"age":"47"}]|
+|[{gender -> Male}, {age -> 34}]  |[{"gender":"Male"},{"age":"34"}]  |
++---------------------------------+----------------------------------+
+
+"""
+```
+
+### `ArrayType` column into JSON StringType
+
+```python
+from pyspark.sql.functions import to_json
+
+df3 = df.select("preferences", to_json("preferences").alias("str_preferences"))
+df3.printSchema()
+df3.show(truncate=False)
+
+"""
+Output:
+
+root
+ |-- preferences: array (nullable = true)
+ |    |-- element: string (containsNull = true)
+ |-- str_preferences: string (nullable = true)
+
++--------------------------------+-----------------------------------+
+|preferences                     |str_preferences                    |
++--------------------------------+-----------------------------------+
+|[District of Columbia, Colorado]|["District of Columbia","Colorado"]|
+|[California, Massachusetts]     |["California","Massachusetts"]     |
+|[North Carolina, Minnesota]     |["North Carolina","Minnesota"]     |
+|[Michigan, Pennsylvania]        |["Michigan","Pennsylvania"]        |
+|[Montana, California]           |["Montana","California"]           |
++--------------------------------+-----------------------------------+
+
+"""
+```
 
 
 ## Merge/Union Two DataFrames with Different Columns or Schema
