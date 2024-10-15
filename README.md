@@ -58,6 +58,7 @@
     - [`Map` / `MapType` Column to JSON StringType](#map--maptype-column-to-json-stringtype)
     - [`List of MapType` column into JSON StringType](#list-of-maptype-column-into-json-stringtype)
     - [`ArrayType` column into JSON StringType](#arraytype-column-into-json-stringtype)
+  - [Change Column Type in a StructType](#change-column-type-in-a-structtype)
   - [Merge/Union Two DataFrames with Different Columns or Schema](#mergeunion-two-dataframes-with-different-columns-or-schema)
     - [(1) `unionByName(allowMissingColumns=True)`](#1-unionbynameallowmissingcolumnstrue)
     - [(2) Create missing columns manually](#2-create-missing-columns-manually)
@@ -1581,6 +1582,103 @@ root
 |[Montana, California]           |["Montana","California"]           |
 +--------------------------------+-----------------------------------+
 
+"""
+```
+
+
+## Change Column Type in a StructType
+
+Changing `phone_number` column (under Struct `info`) type to `Interger` from `String`
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+from pyspark.sql.functions import col
+
+# Initialize Spark session
+spark = SparkSession.builder.appName("example").getOrCreate()
+
+# Sample data
+data = [
+    (("John", "A", "Doe"), ("1234567890", "123 Main St", "30"), "001", "M", 3000),
+    (("Jane", "B", "Smith"), ("0987654321", "456 Elm St", "25"), "002", "F", 4000)
+]
+
+# Original schema
+structureSchema = StructType([
+    StructField('name', StructType([
+        StructField('firstname', StringType(), True),
+        StructField('middlename', StringType(), True),
+        StructField('lastname', StringType(), True)
+    ])),
+    StructField('info', StructType([
+        StructField('phone_number', StringType(), True),
+        StructField('address', StringType(), True),
+        StructField('age', StringType(), True)
+    ])),
+    StructField('id', StringType(), True),
+    StructField('gender', StringType(), True),
+    StructField('salary', IntegerType(), True)
+])
+
+# Create DataFrame
+df = spark.createDataFrame(data, schema=structureSchema)
+
+df.printSchema()
+df.show(truncate=False)
+
+"""
+root
+ |-- name: struct (nullable = true)
+ |    |-- firstname: string (nullable = true)
+ |    |-- middlename: string (nullable = true)
+ |    |-- lastname: string (nullable = true)
+ |-- info: struct (nullable = true)
+ |    |-- phone_number: string (nullable = true)
+ |    |-- address: string (nullable = true)
+ |    |-- age: string (nullable = true)
+ |-- id: string (nullable = true)
+ |-- gender: string (nullable = true)
+ |-- salary: integer (nullable = true)
+
++----------------+-----------------------------+---+------+------+
+|name            |info                         |id |gender|salary|
++----------------+-----------------------------+---+------+------+
+|{John, A, Doe}  |{1234567890, 123 Main St, 30}|001|M     |3000  |
+|{Jane, B, Smith}|{0987654321, 456 Elm St, 25} |002|F     |4000  |
++----------------+-----------------------------+---+------+------+
+"""
+```
+
+Change type:
+```python
+# Change the type of 'age' column from StringType to IntegerType within the 'info' struct
+df = df.withColumn("info", col("info").withField("age", col("info.age").cast(IntegerType())))
+
+# Show the updated DataFrame
+df.printSchema()
+df.show(truncate=False)
+
+"""
+root
+ |-- name: struct (nullable = true)
+ |    |-- firstname: string (nullable = true)
+ |    |-- middlename: string (nullable = true)
+ |    |-- lastname: string (nullable = true)
+ |-- info: struct (nullable = true)
+ |    |-- phone_number: string (nullable = true)
+ |    |-- address: string (nullable = true)
+ |    |-- age: integer (nullable = true)
+ |-- id: string (nullable = true)
+ |-- gender: string (nullable = true)
+ |-- salary: integer (nullable = true)
+
++----------------+-----------------------------+---+------+------+
+|name            |info                         |id |gender|salary|
++----------------+-----------------------------+---+------+------+
+|{John, A, Doe}  |{1234567890, 123 Main St, 30}|001|M     |3000  |
+|{Jane, B, Smith}|{0987654321, 456 Elm St, 25} |002|F     |4000  |
++----------------+-----------------------------+---+------+------+
 """
 ```
 
