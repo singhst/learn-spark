@@ -2537,7 +2537,7 @@ only showing top 20 rows
 
 #### Data example of `Iterator[pd.DataFrame]`
 
-Sure! Here's an example of how you might use an `Iterator[pd.DataFrame]` in practice. Let's say you have a list of pandas DataFrames, each representing a chunk of data. You can create an iterator over these DataFrames and process them one by one.
+Example of how you might use an `Iterator[pd.DataFrame]` in practice. Let's say you have a list of pandas DataFrames, each representing a chunk of data. You can create an iterator over these DataFrames and process them one by one.
 
 ```python
 import pandas as pd
@@ -2578,7 +2578,8 @@ df2:
 """
 ```
 
-use the `renormalize` function you provided to process these DataFrames:
+Use the `renormalize` function you provided to process these DataFrames:
+
 ```python
 from collections.abc import Iterator
 
