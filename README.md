@@ -2506,6 +2506,7 @@ def renormalize(itr: Iterator[pd.DataFrame]) -> Iterator[pd.DataFrame]:
 expected_schema = 'device_id int, trip_id int, sensor_reading long, sqrt_reading long'
 df = df.mapInPandas(renormalize, schema=expected_schema)
 df.orderBy("device_id").show(truncate=False)
+
 """
 +---------+-------+--------------+------------+
 |device_id|trip_id|sensor_reading|sqrt_reading|
@@ -2595,7 +2596,6 @@ processed_dfs = renormalize(dataframes)
 # Iterate over the processed DataFrames and print them
 for df in processed_dfs:
     print(df)
-
 
 """
 The output will be:
