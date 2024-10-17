@@ -93,7 +93,9 @@
     - [Normal Pyspark UDF `udf()`](#normal-pyspark-udf-udf)
     - [`pandas_udf()`](#pandas_udf)
     - [`applyInPandas()`](#applyinpandas)
-    - [`mapInPandas()`](#mapinpandas)
+    - [`mapInPandas(self_func(Iterator[]))`](#mapinpandasself_funciterator)
+      - [Data example of `Iterator[pd.DataFrame]`](#data-example-of-iteratorpddataframe)
+    - [Output](#output)
   - [Find duplicates and non-duplicates](#find-duplicates-and-non-duplicates)
     - [(1) `exceptAll()` what is pyspark "exceptAll()" function? Explain it with example](#1-exceptall-what-is-pyspark-exceptall-function-explain-it-with-example)
     - [(2) `subtract()` - Is this the same as "subtract()"? Can I use join (but which type of join) to achieve this?](#2-subtract---is-this-the-same-as-subtract-can-i-use-join-but-which-type-of-join-to-achieve-this)
@@ -2488,7 +2490,7 @@ df.show(truncate=False)
 +---------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+--------------+------------+
 ```
 
-### `mapInPandas()`
+### `mapInPandas(self_func(Iterator[]))`
 The final approach to distributing custom Pandas functions is mapInPandas. In our mapInPandas function, we can return many rows for each input row, meaning it operates in an opposite manner to applyInPandas. We’ll use a Python Iterator for this, allowing us to be flexible in how many rows we yield. In our simple example below, we’ll convert the granularity of the DataFrame back to one row per combination of trip_id and device_id. Note that this example is illustrative - we could simply use Spark’s native explode() function and get the same result but more performant. For a more realistic use of this approach, read the blog post referenced above which describes how to use mapInPandas to process uncommon file types. 
 
 ```python
@@ -2530,6 +2532,82 @@ df.orderBy("device_id").show(truncate=False)
 |0        |3      |516           |272         |
 +---------+-------+--------------+------------+
 only showing top 20 rows
+"""
+```
+
+#### Data example of `Iterator[pd.DataFrame]`
+
+Sure! Here's an example of how you might use an `Iterator[pd.DataFrame]` in practice. Let's say you have a list of pandas DataFrames, each representing a chunk of data. You can create an iterator over these DataFrames and process them one by one.
+
+```python
+import pandas as pd
+
+# Create sample DataFrames
+df1 = pd.DataFrame({
+    'device_id': [1, 2],
+    'trip_id': [[101, 102], [103, 104]],
+    'sensor_reading': [100, 200],
+    'sqrt_reading': [10, 14]
+})
+df1.display()
+
+df2 = pd.DataFrame({
+    'device_id': [3, 4],
+    'trip_id': [[105, 106], [107, 108]],
+    'sensor_reading': [300, 400],
+    'sqrt_reading': [17, 20]
+})
+df2.display()
+
+# Create an iterator over the DataFrames
+dataframes = iter([df1, df2])
+for df in dataframes:
+    print(df)
+dataframes = iter([df1, df2])
+
+"""
+df1:
+   device_id     trip_id  sensor_reading  sqrt_reading
+0          1  [101, 102]             100            10
+1          2  [103, 104]             200            14
+
+df2:
+   device_id     trip_id  sensor_reading  sqrt_reading
+0          3  [105, 106]             300            17
+1          4  [107, 108]             400            20
+"""
+```
+
+use the `renormalize` function you provided to process these DataFrames:
+```python
+from collections.abc import Iterator
+
+def renormalize(itr: Iterator[pd.DataFrame]) -> Iterator[pd.DataFrame]:
+    for pdf in itr:
+        # Unpack the list of values from the trip_id column into their own rows
+        pdf = pdf.explode('trip_id')
+        yield pdf
+
+# Apply the renormalize function
+processed_dfs = renormalize(dataframes)
+
+# Iterate over the processed DataFrames and print them
+for df in processed_dfs:
+    print(df)
+
+
+"""
+The output will be:
+   device_id  trip_id  sensor_reading  sqrt_reading
+0          1      101             100            10
+0          1      102             100            10
+1          2      103             200            14
+1          2      104             200            14
+   device_id  trip_id  sensor_reading  sqrt_reading
+0          3      105             300            17
+0          3      106             300            17
+1          4      107             400            20
+1          4      108             400            20
 """
 ```
 
