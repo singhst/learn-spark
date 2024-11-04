@@ -52,6 +52,7 @@
     - [Read range of file names](#read-range-of-file-names)
       - [Character range `[a-b]` read](#character-range-a-b-read)
       - [Alternation `{a,b,c}` read](#alternation-abc-read)
+    - [Read csv use double quotation as escape character](#read-csv-use-double-quotation-as-escape-character)
   - [\[ing\] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
   - [convert Map, Array, or Struct Type Columns into JSON Strings](#convert-map-array-or-struct-type-columns-into-json-strings)
     - [Exaplme Data](#exaplme-data)
@@ -95,7 +96,6 @@
     - [`applyInPandas()`](#applyinpandas)
     - [`mapInPandas(self_func(Iterator[]))`](#mapinpandasself_funciterator)
       - [Data example of `Iterator[pd.DataFrame]`](#data-example-of-iteratorpddataframe)
-    - [Output](#output)
   - [Find duplicates and non-duplicates](#find-duplicates-and-non-duplicates)
     - [(1) `exceptAll()` what is pyspark "exceptAll()" function? Explain it with example](#1-exceptall-what-is-pyspark-exceptall-function-explain-it-with-example)
     - [(2) `subtract()` - Is this the same as "subtract()"? Can I use join (but which type of join) to achieve this?](#2-subtract---is-this-the-same-as-subtract-can-i-use-join-but-which-type-of-join-to-achieve-this)
@@ -1435,6 +1435,33 @@ root
 |id_10|99999       |704    |STANDARD   |PR   |
 |id_10|999999      |563    |STANDARD   |PR   |
 +-----+------------+-------+-----------+-----+
+```
+
+### Read csv use double quotation as escape character
+
+
+  <details>
+      <summary>example data .csv</summary>
+    ```
+    Organization Name,Organization Name URL,Industries,Headquarters Location,Description,CB Rank (Company),Founded Date,Founded Date Precision,Operating Status,Website,Twitter,Facebook,LinkedIn,Actively Hiring,Number of Sub-Orgs,Full Description,Phone Number,Contact Email,Number of Articles,Hub Tags,Number of Employees,Founders,Last Leadership Hiring Date,Last Layoff Mention Date,Number of Events,Trend Score (7 Days),Trend Score (30 Days),Trend Score (90 Days),Similar Companies,SEMrush - Monthly Visits,SEMrush - Average Visits (6 months),SEMrush - Monthly Visits Growth,SEMrush - Visit Duration,SEMrush - Visit Duration Growth,SEMrush - Page Views / Visit,SEMrush - Page Views / Visit Growth,SEMrush - Bounce Rate Growth,SEMrush - Bounce Rate,SEMrush - Global Traffic Rank,SEMrush - Monthly Rank Change (#),SEMrush - Monthly Rank Growth,Apptopia - Number of Apps,Apptopia - Downloads Last 30 Days,IPO Date,IPO Status,Stock Symbol,Stock Symbol URL,Stock Exchange,Valuation at IPO,Valuation at IPO Currency,Valuation at IPO Currency (in USD),Money Raised at IPO,Money Raised at IPO Currency,Money Raised at IPO Currency (in USD)
+    Dunelm,https://www.crunchbase.com/organization/dunelm,"Consumer Goods, E-Commerce, Furniture, Home Decor, Manufacturing, Marketing, Retail","Leicester, Leicester, United Kingdom","Dunelm is the UK's home furnishing retailers. Shop for bedding, curtains, furniture, beds, and mattresses.","126,848",1979-01-01,year,Active,http://www.dunelm.com/,https://twitter.com/DunelmUK?ref_src=twsrc%5Egoogle%7Ctwcamp%5Eserp%7Ctwgr%5Eauthor,https://www.facebook.com/DunelmUK/,https://www.linkedin.com/company/dunelm-soft-furnishings-ltd,,,"Dunelm, the UK's leading home furnishing retailers. Shop for bedding, curtains, furniture, beds and mattresses. It all started 37 years ago in Leicester, when Bill and Jean Adderley opened a home textiles business offering a wide range of products at affordable prices. Their first shops were small high street units, based in a few towns across the East Midlands. But thanks to their philosophy of ""simply value for money""​, the business began to grow and grow. Today, there are now over 150 Dunelm stores right across the UK and Northern Ireland.",084-5165-6565,corporate@dunelm.com,163,,5001-10000,William Adderley,,,,-0.6,-1.3,-0.1,11,"12,937,119","9,698,912.67",22.52%,651,5.85%,1.87,1.85%,-7.64%,63.97%,"8,560","-1,148",-11.83%,1,,2014-11-17,Public,DNLM,https://www.crunchbase.com/ipo/dunelm-ipo--60f5c179,LSE - London Stock Exchange,,,,,,
+    Tractor Supply Company,https://www.crunchbase.com/organization/tractor-supply-company,"Agriculture, Retail, Shopping","Brentwood, Tennessee, United States","Tractor Supply Company helps customers find everything they need to maintain their farms, ranches, homes and animals.","113,024",1938-01-01,year,Active,http://www.tractorsupply.com/,https://twitter.com/tractorsupply,https://www.facebook.com/TractorSupplyCo,https://www.linkedin.com/company/tractor-supply-company,,,"Tractor Supply Company is the largest operator of rural lifestyle retail stores in the United States. The company operates over over 2000 retail stores in 49 states, employs more than 45,000 team members and is headquartered in Brentwood, Tenn. Its stock is traded on the NASDAQ exchange under the symbol ""TSCO"".  The company was founded in 1938 as a mail order catalog business offering tractor parts to America's family farmers. Today Tractor Supply is a leading edge retailer with annual revenues of nearly $10 billion.  Tractor Supply stores are located primarily in towns outlying major metropolitan markets and in rural communities. The typical Tractor Supply store has about 16,000 square feet of selling space inside, with a similar amount of outside space.",(877)718-6750,,221,,10001+,Charles E. Schmidt,2019-12-20,,,0,0.5,2.5,8,"18,662,480","19,024,232",17.47%,383,4.64%,2.73,-5.99%,-1.33%,48.04%,"6,212",-419,-6.32%,4,"152,803",1994-02-25,Public,TSCO,https://www.crunchbase.com/ipo/tractor-supply-company-ipo--40d66ee8,NASDAQ,,,,,,
+    TRANSSION,https://www.crunchbase.com/organization/transsion,"Manufacturing, Mobile","Shenzhen, Guangdong, China","TRANSSION is a high-tech company specializing in the R&D, production, sale and service of mobile communication products.","105,340",2013-01-01,year,Active,http://transsion.com/,,https://www.facebook.com/Transsion-Holdings-1063184517071454/,https://www.linkedin.com/company/%E4%BC%A0%E9%9F%B3%E6%8E%A7%E8%82%A1%E9%9B%86%E5%9B%A2/,,,"TRANSSION HOLDINGS, the company formerly known as TECNO TELECOM LIMITED, established in July 2006, is a high-tech company specializing in the R&D, production, sale and service of mobile communication products. After years of development, TRANSSION has become an important part of the mobile phone industry and one of the major mobile phone manufacturers in the world. Currently, it has full ownership of three famous mobile phone brands TECNO, itel and Infinix, and an after-sales service brand Carlcare. The company has set up offices in many countries and regions, such as Dubai, Nigeria, Kenya, Tanzania, Cameroon and Bengal, and even has built a factory in Ethiopia, which has provided great support for all its brands.",86-755-33979200,hello@transsion.com,42,,10001+,,2022-01-13,,,-0.6,-0.9,-0.3,10,"67,288","103,266.5",-59.33%,"1,656",12.5%,2.72,-18.55%,21.34%,51.85%,"548,929","274,683",100.16%,2,70,2019-09-25,Public,688036,https://www.crunchbase.com/ipo/transsion-ipo--f0897048,SZSE - Shenzhen Stock Exchange,3950000000,USD,3950000000,400000000,USD,400000000
+    ```
+  </details>
+
+Code,
+```python
+import os
+df = (
+    spark.read
+    .option("header", True)
+    .option("quote", "\"")
+    .option("escape", "\"")
+    .option("inferSchema", True)
+    .csv(f"file:{os.getcwd()}/csv.csv")
+)
+df.display()
 ```
 
 
