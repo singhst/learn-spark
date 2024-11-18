@@ -60,6 +60,7 @@
     - [`List of MapType` column into JSON StringType](#list-of-maptype-column-into-json-stringtype)
     - [`ArrayType` column into JSON StringType](#arraytype-column-into-json-stringtype)
   - [Change Column Type in a StructType](#change-column-type-in-a-structtype)
+  - [Sort Array of Struct by a Field Inside that Struct](#sort-array-of-struct-by-a-field-inside-that-struct)
   - [Merge/Union Two DataFrames with Different Columns or Schema](#mergeunion-two-dataframes-with-different-columns-or-schema)
     - [(1) `unionByName(allowMissingColumns=True)`](#1-unionbynameallowmissingcolumnstrue)
     - [(2) Create missing columns manually](#2-create-missing-columns-manually)
@@ -1726,6 +1727,54 @@ root
 +----------------+-----------------------------+---+------+------+
 """
 ```
+## Sort Array of Struct by a Field Inside that Struct
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, array_sort
+
+# Initialize Spark session
+spark = SparkSession.builder.appName("example").getOrCreate()
+
+# Sample data
+data = [
+    (1, [{"date": "2023-01-12 12:00:00", "value": 10}, {"date": "2023-01-02 13:00:00", "value": 20}]),
+    (2, [{"date": "2022-01-03 14:00:00", "value": 30}, {"date": "2023-05-04 15:00:00", "value": 40}, {"date": "2023-02-03 14:00:00", "value": 30}, {"date": "2023-10-04 15:00:00", "value": 40}]),
+]
+
+# Create DataFrame
+df = spark.createDataFrame(data, ["id", "prediction"])
+df.show(truncate=False)
+df.display()
+
+# Sort the array of structs by the 'date' field
+df_sorted = df.withColumn(
+    "prediction",
+    F.expr("array_sort(prediction, (left, right) -> CASE WHEN left.date < right.date THEN -1 WHEN left.date > right.date THEN 1 ELSE 0 END)")
+)
+
+# Show the result
+df_sorted.show(truncate=False)
+df_sorted.display()
+
+"""output
++---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|id |prediction                                                                                                                                                                      |
++---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|1  |[{date -> 2023-01-12 12:00:00, value -> 10}, {date -> 2023-01-02 13:00:00, value -> 20}]                                                                                        |
+|2  |[{date -> 2022-01-03 14:00:00, value -> 30}, {date -> 2023-05-04 15:00:00, value -> 40}, {date -> 2023-02-03 14:00:00, value -> 30}, {date -> 2023-10-04 15:00:00, value -> 40}]|
++---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+
++---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|id |prediction                                                                                                                                                                      |
++---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|1  |[{date -> 2023-01-02 13:00:00, value -> 20}, {date -> 2023-01-12 12:00:00, value -> 10}]                                                                                        |
+|2  |[{date -> 2022-01-03 14:00:00, value -> 30}, {date -> 2023-02-03 14:00:00, value -> 30}, {date -> 2023-05-04 15:00:00, value -> 40}, {date -> 2023-10-04 15:00:00, value -> 40}]|
++---+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+"""
+```
+
 
 
 ## Merge/Union Two DataFrames with Different Columns or Schema
