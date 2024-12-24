@@ -53,7 +53,12 @@
       - [Character range `[a-b]` read](#character-range-a-b-read)
       - [Alternation `{a,b,c}` read](#alternation-abc-read)
     - [Read csv use double quotation as escape character](#read-csv-use-double-quotation-as-escape-character)
-  - [\[ing\] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
+  - [Optimization](#optimization)
+    - [\[ing\] Speed Up Reading .csv/.json with schema](#ing-speed-up-reading-csvjson-with-schema)
+    - [Multithread submits spark job](#multithread-submits-spark-job)
+      - [Sequential Approach](#sequential-approach)
+      - [Multithreading Approach](#multithreading-approach)
+      - [Potential Use Cases for Multithreading with Spark](#potential-use-cases-for-multithreading-with-spark)
   - [convert Map, Array, or Struct Type Columns into JSON Strings](#convert-map-array-or-struct-type-columns-into-json-strings)
     - [Exaplme Data](#exaplme-data)
     - [`Map` / `MapType` Column to JSON StringType](#map--maptype-column-to-json-stringtype)
@@ -1476,13 +1481,151 @@ df.display()
 # +--------------------+---------------------+--------------------+---------------------+--------------------+-----------------+------------+----------------------+----------------+--------------------+--------------------+--------------------+--------------------+---------------+------------------+--------------------+---------------+--------------------+------------------+--------+-------------------+------------------+---------------------------+------------------------+----------------+--------------------+---------------------+---------------------+-----------------+------------------------+-----------------------------------+-------------------------------+------------------------+-------------------------------+----------------------------+-----------------------------------+----------------------------+---------------------+-----------------------------+---------------------------------+-----------------------------+-------------------------+---------------------------------+----------+----------+------------+--------------------+--------------------+----------------+-------------------------+----------------------------------+-------------------+----------------------------+-------------------------------------+
 ```
 
+## Optimization
 
-## [ing] Speed Up Reading .csv/.json with schema
+### [ing] Speed Up Reading .csv/.json with schema
 
 Reading .csv/.json by a pre-defined schema can speed up data import, because Spark doesn't need to scan values in each column/attribute to auto-build the schema based on data.
 
 * [Using schemas to speed up reading into Spark DataFrames](https://t-redactyl.io/blog/2020/08/using-schemas-to-speed-up-reading-into-spark-dataframes.html)
 * [Spark read JSON with or without schema](https://sparkbyexamples.com/spark/spark-read-json-with-schema/)
+
+
+### Multithread submits spark job
+
+#### Sequential Approach
+
+* [Spark — Beyond Basics: Multithreading in Spark using Python](https://towardsdev.com/spark-beyond-basics-multithreading-in-spark-using-python-92ae8befc5ed)
+
+  ```python line_numbers
+  # List of tables
+  TABLES = ["db1.table1", "db1.table2", "db2.table3", "db2.table4", "db3.table5", "db3.table6"]
+
+  # List to keep the dictionary of table_name and respective count
+  table_count = []
+
+  # function to get the table records count.
+  def get_count(table: str) -> dict:
+      count_dict = {}
+      count_dict["table_name"] = table
+      try:
+          count = spark.read.table(table).count()
+          count_dict["count"] = count
+      except Exception:
+          count_dict["count"] = 0
+      return count_dict
+
+  def main():
+      for table in TABLES:
+          table_count.append(get_count(table))
+
+
+  if __name__ == "__main__":
+      main()
+      # Creating dataframe from list
+      count_df = spark.createDataFrame(table_count).withColumn(
+          "date", datetime.now().date()
+      )
+
+      # writing into the table
+      count_df.coalesce(1).write.insertInto("control_db.counts_table")
+  ```
+
+  Spark UI:
+
+  <img src="img/spark-multithreading-sparkui-sequential.webp" style="zoom:80%;" />
+
+
+#### Multithreading Approach
+
+* [Enhancing Spark Job Performance with Multithreading](https://medium.com/@geekfrosty/enhancing-spark-job-performance-with-multithreading-31118b8ace76)
+
+Only the job submission is happening in parallel here, how long does a job take to complete still depends on the Spark executor configurations provided during spark-submit
+
+  ```python line_numbers
+  from concurrent.futures import ThreadPoolExecutor
+
+  # List of tables
+  TABLES = ["db1.table1", "db1.table2", "db2.table3", "db2.table4", "db3.table5", "db3.table6"]
+
+  # function to get the table records count.
+  def get_count(table: str) -> dict:
+      count_dict = {}
+      count_dict["table_name"] = table
+      try:
+          count = spark.read.table(table).count()
+          count_dict["count"] = count
+      except Exception:
+          count_dict["count"] = 0
+      return count_dict
+
+  # Code implementation using ThreadPoolExecutor
+  def main(TABLES: list) -> None:
+      """Main method to submit count jobs in parallel.
+
+      Args:
+          TABLES (list): list of table name.
+
+      Raises:
+          e: Exception in case of any failures
+      """
+      with ThreadPoolExecutor(max_workers=6) as executor:
+          to_do_map = {}
+          for table in TABLES:
+              # Submitting jobs in parallel
+              future = executor.submit(get_count, table)
+              print(f"scheduled for {table}: {future}")
+              to_do_map[future] = table
+          done_iter = as_completed(to_do_map)
+
+          for future in done_iter:
+              try:
+                  count = future.result()
+                  print("result: ", count)
+                  count_list.append(count)
+              except Exception as e:
+                  raise e
+
+  if __name__ == "__main__":
+      # call main method for getting counts in parallel
+      main(TABLES)
+      
+      # count_list -> list of dict containing table_name and count
+      print(count_list)
+      # Create dataframe
+      table_count_df = spark.createDataFrame(count_list)
+      table_count_df = table_count_df.withColumn("insert_ts", lit(datetime.now()))
+
+      # Write dataframe into a control table.
+      col_order = spark.read.table(CNT_TABLE).limit(1).columns
+      table_count_df.select(*col_order).coalesce(1).write.insertInto(
+          CNT_TABLE, overwrite=True
+      )
+  ```
+
+  Explanation:
+  * `executor.submit` schedules the `get_count()` to be executed, and returns a `future` representing the pending operation.
+  * `concurrent.futures.Future` is an instance of `Future` class represents a deferred computation that may or may not have been completed.
+  * `as_complete` takes an iterable of futures and returns an iterator that yields futures as they are completed.
+  * `future.result()` get the results of the completed future. *This where exceptions needs to be handled properly for better debugging in case of errors.*
+
+  Spark UI:
+
+  <img src="img/spark-multithreading-sparkui-multithreading.webp" style="zoom:80%;" />
+
+#### Potential Use Cases for Multithreading with Spark
+  
+  1. Parallel Data Processing:
+
+      When you need to perform independent operations on multiple datasets or tables, multithreading can help speed up the process by utilizing multiple threads to handle different tasks concurrently.
+  
+  2. Concurrent Data Loading:
+
+      Loading data from multiple sources or tables into Spark DataFrames can be done in parallel, reducing the overall data loading time.
+  
+  3. Asynchronous Operations:
+
+      For tasks that involve waiting for I/O operations (e.g., reading from databases, writing to storage), multithreading can help keep the CPU busy by performing other tasks while waiting for I/O operations to complete.
 
 
 ## convert Map, Array, or Struct Type Columns into JSON Strings
