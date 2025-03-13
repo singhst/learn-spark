@@ -59,6 +59,8 @@
       - [Sequential Approach](#sequential-approach)
       - [Multithreading Approach](#multithreading-approach)
       - [Potential Use Cases for Multithreading with Spark](#potential-use-cases-for-multithreading-with-spark)
+    - [Optimize JOIN operations](#optimize-join-operations)
+      - [Broadcast Join](#broadcast-join)
   - [convert Map, Array, or Struct Type Columns into JSON Strings](#convert-map-array-or-struct-type-columns-into-json-strings)
     - [Exaplme Data](#exaplme-data)
     - [`Map` / `MapType` Column to JSON StringType](#map--maptype-column-to-json-stringtype)
@@ -1627,6 +1629,21 @@ Only the job submission is happening in parallel here, how long does a job take 
 
       For tasks that involve waiting for I/O operations (e.g., reading from databases, writing to storage), multithreading can help keep the CPU busy by performing other tasks while waiting for I/O operations to complete.
 
+
+### Optimize JOIN operations 
+
+#### Broadcast Join
+
+Scenario: when size of a table is smaller than 5GB (e.g., a dimension table < 5GB, then joins to fact table = larger)
+
+Broadcast Join: If one of the DataFrames is small enough to fit in memory, you can use a broadcast join. This avoids shuffling by sending the smaller DataFrame to all worker nodes.
+
+  ```python
+  from pyspark.sql.functions import broadcast
+  df1 = spark.read.parquet("large_df.parquet")
+  df2 = spark.read.parquet("small_df.parquet")
+  result = df1.join(broadcast(df2), "key")
+  ```
 
 ## convert Map, Array, or Struct Type Columns into JSON Strings
 
