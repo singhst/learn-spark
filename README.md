@@ -142,6 +142,23 @@ Each RDD composists of `Partitions`; each `Partition` contains equal number of `
 
 <img src="img\rddDataset-partitions-items.png" height="200"/>
 
+Visual Relationship:
+```
+DataFrame (Structured)
+│
+├── Schema: [ID: Int, Name: String]
+│
+└── Underlying RDD: [ 🧱 Row(ID=1, Name=Alice), 🧱 Row(ID=2, Name=Bob) ]
+    │
+    └── Partitions: [Partition 1, Partition 2, ...]
+```
+
+```
+RDD: [Partition 1] [Partition 2] [Partition 3] ... [Partition N]
+        ↓             ↓              ↓                   ↓
+      Worker 1      Worker 2      Worker 3           Worker N
+```
+
 ## Where code runs
 
 <img src="img/cluster-overview.png" height="200"/>
