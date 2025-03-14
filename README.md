@@ -60,7 +60,8 @@
       - [Multithreading Approach](#multithreading-approach)
       - [Potential Use Cases for Multithreading with Spark](#potential-use-cases-for-multithreading-with-spark)
     - [Optimize JOIN operations](#optimize-join-operations)
-      - [Broadcast Join](#broadcast-join)
+      - [(1) Broadcast Join](#1-broadcast-join)
+      - [(2) Repartition Before Joining](#2-repartition-before-joining)
   - [convert Map, Array, or Struct Type Columns into JSON Strings](#convert-map-array-or-struct-type-columns-into-json-strings)
     - [Exaplme Data](#exaplme-data)
     - [`Map` / `MapType` Column to JSON StringType](#map--maptype-column-to-json-stringtype)
@@ -1632,7 +1633,7 @@ Only the job submission is happening in parallel here, how long does a job take 
 
 ### Optimize JOIN operations 
 
-#### Broadcast Join
+#### (1) Broadcast Join
 
 Scenario: when size of a table is smaller than 5GB (e.g., a dimension table < 5GB, then joins to fact table = larger)
 
@@ -1644,6 +1645,66 @@ Broadcast Join: If one of the DataFrames is small enough to fit in memory, you c
   df2 = spark.read.parquet("small_df.parquet")
   result = df1.join(broadcast(df2), "key")
   ```
+
+#### (2) Repartition Before Joining
+
+Q: Why useful?
+
+Ans:  same join keys are inside the same partitions from 2 dataframes, so partition N from df1 and partition M from df2 can join together
+
+  Before Repartitioning
+
+  **df1**:
+  ```
+  Partition 1          | Partition 2          | Partition 3
+  key1, val1           | key2, val2           | key3, val3
+  key4, val4           | key5, val5           | key6, val6
+  key7, val7           | key8, val8           | key9, val9
+  ```
+
+  **df2**:
+  ```
+  Partition 1          | Partition 2          | Partition 3
+  key3, val10          | key1, val11          | key2, val12
+  key6, val13          | key4, val14          | key5, val15
+  key9, val16          | key7, val17          | key8, val18
+  ```
+
+  After Repartitioning
+
+  After repartitioning both DataFrames on the `"key"` column, the data is redistributed so that rows with the same key are in the same partition.
+
+  **df1**:
+  ```
+  Partition 1          | Partition 2          | Partition 3
+  key1, val1           | key2, val2           | key3, val3
+  key1, val11          | key2, val12          | key3, val10
+  key4, val4           | key5, val5           | key6, val6
+  key4, val14          | key5, val15          | key6, val13
+  key7, val7           | key8, val8           | key9, val9
+  key7, val17          | key8, val18          | key9, val16
+  ```
+
+  Join Operation
+
+  When performing the join, PySpark can efficiently match rows within the same partition.
+
+  **Join Result**:
+  ```
+  Partition 1          | Partition 2          | Partition 3
+  key1, val1, val11    | key2, val2, val12    | key3, val3, val10
+  key4, val4, val14    | key5, val5, val15    | key6, val6, val13
+  key7, val7, val17    | key8, val8, val18    | key9, val9, val16
+  ```
+
+  Benefits of Repartitioning
+
+  1. **Data Colocation**: Rows with the same key are colocated in the same partition, reducing the need for shuffling during the join.
+  2. **Reduced Network I/O**: Less data movement across the network, leading to faster join operations.
+  3. **Improved Parallelism**: Balanced partitions allow for efficient parallel processing, utilizing the cluster resources effectively.
+
+  By repartitioning the DataFrames on the join key, you ensure that the join operation is more efficient, leading to significant performance improvements.
+
 
 ## convert Map, Array, or Struct Type Columns into JSON Strings
 
